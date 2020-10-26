@@ -1,0 +1,59 @@
+<form class="splunk-formatter-section" section-label="Steps">
+    <splunk-control-group label="Mode">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.stepsMode" value="gradient">
+            <option value="highlight">Highlight Complete</option>
+            <option value="gradient">Gradient</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <div>
+        <span style="display: block; margin: 15px 0px 15px 20px; font-size: 85%; color: #999;">
+            Gradient mode settings
+        </span>
+    </div>
+    <splunk-control-group label="Min Gradient Color">
+        <splunk-color-picker type="splunkSequential" name="{{VIZ_NAMESPACE}}.stepsMinColor" value="#ECF8FF"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Max Gradient Color">
+        <splunk-color-picker  type="splunkSequential" name="{{VIZ_NAMESPACE}}.stepsMaxColor" value="#003D5E"></splunk-color-picker>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Links">
+    <splunk-control-group label="Stroke Width">
+    <splunk-radio-input name="{{VIZ_NAMESPACE}}.variableStrokeWidth" value="true">
+        <option value="true">Variable</option>
+        <option value="false">Static</option>
+    </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Link Vertices">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.linkVertices" value="true">
+            <option value="true">True</option>
+            <option value="false">False</option>
+        </splunk-radio-input>
+        </splunk-control-group>    
+    <span style="display: block; margin: 15px 0px 15px 20px; font-size: 85%; color: #999;">
+        Label settings
+    </span>
+    <splunk-control-group label="Aggregation Method">
+    <splunk-select name="{{VIZ_NAMESPACE}}.aggregationMethod" value="mean">
+        <option value="mean">Mean</option>
+        <option value="min">Min</option>
+        <option value="max">Max</option>
+    </splunk-select>
+</splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Layout">
+    <splunk-control-group label="Orientation">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.layoutOrientation" value="TB">
+            <option value="TB">TB</option>
+            <option value="BT">BT</option>
+            <option value="LR">LR</option>
+            <option value="RL">RL</option>
+        </splunk-radio-input>
+        </splunk-control-group>
+    <splunk-control-group label="Node Separation">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.layoutNodeSep" value="50"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Edge Separation">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.layoutEdgeSep" value="80"></splunk-text-input>
+    </splunk-control-group>
+</form>

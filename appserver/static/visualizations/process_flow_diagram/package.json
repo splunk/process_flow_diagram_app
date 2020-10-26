@@ -1,0 +1,24 @@
+{
+  "name": "process_flow_diagram",
+  "version": "1.0.0",
+  "description": "Custom visualization for process flows.",
+  "main": "visualization.js",
+  "scripts": {
+    "build": "$SPLUNK_HOME/bin/splunk cmd node ./node_modules/webpack/bin/webpack.js",
+    "devbuild": "$SPLUNK_HOME/bin/splunk cmd node ./node_modules/webpack/bin/webpack.js --progress",
+    "watch": "$SPLUNK_HOME/bin/splunk cmd node ./node_modules/webpack/bin/webpack.js -d --watch --progress"
+  },
+  "author": "fdse@splunk.com",
+  "devDependencies": {
+    "webpack": "^1.12.6"
+  },
+  "dependencies": {
+    "d3-interpolate": "^1.4.0",
+    "dagre": "^0.8.5",
+    "graphlib": "^2.1.8",
+    "jointjs": "^3.2.0",
+    "jquery": "^2.2.4",
+    "svg-pan-zoom": "^3.6.1",
+    "underscore": "^1.10.2"
+  }
+}

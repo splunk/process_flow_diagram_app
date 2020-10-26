@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "2.0.0",
+  "info": {
+    "title": "Process Flow Diagram - Custom Visualization",
+    "id": {
+      "group": null,
+      "name": "process_flow_diagram_app",
+      "version": "1.0.0"
+    },
+    "author": [
+      {
+        "name": "dfederschmidt@splunk.com",
+        "email": null,
+        "company": null
+      }
+    ],
+    "releaseDate": null,
+    "description": "Custom visualization for process flows.",
+    "classification": {
+      "intendedAudience": null,
+      "categories": [],
+      "developmentStatus": null
+    },
+    "commonInformationModels": null,
+    "license": {
+      "name": null,
+      "text": null,
+      "uri": null
+    },
+    "privacyPolicy": {
+      "name": null,
+      "text": null,
+      "uri": null
+    },
+    "releaseNotes": {
+      "name": null,
+      "text": "./README.md",
+      "uri": null
+    }
+  },
+  "dependencies": null,
+  "tasks": null,
+  "inputGroups": null,
+  "incompatibleApps": null,
+  "platformRequirements": null,
+  "supportedDeployments": [
+    "_standalone",
+    "_distributed"
+  ],
+  "targetWorkloads": null
+}
