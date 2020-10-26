@@ -42,8 +42,8 @@ package_app:
   stage: package
   script:
       - pip install splunk-packaging-toolkit
-      - slim package -o /tmp/${CI_PROJECT_NAME}_${CI_COMMIT_SHORT_SHA} .
+      - slim package -o /tmp/ .
   artifacts:
     paths:
-      - /tmp/${CI_PROJECT_NAME}_${CI_COMMIT_SHORT_SHA}
+      - /tmp/process_flow_diagram_app-1.0.2.tar.gz
     expire_in: 1 week
