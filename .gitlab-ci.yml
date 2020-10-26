@@ -42,8 +42,9 @@ package_app:
   stage: package
   script:
       - pip install splunk-packaging-toolkit
-      - cp -r . /tmp/dist
-      - slim package /tmp/dist/
+      - mkdir /tmp/${CI_PROJECT_NAME}
+      - git archive --format tar HEAD | tar -xC /tmp/${CI_PROJECT_NAME}
+      - slim package /tmp/${CI_PROJECT_NAME}
   artifacts:
     paths:
       - process_flow_diagram_app-1.0.2.tar.gz
