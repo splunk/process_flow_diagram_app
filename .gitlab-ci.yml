@@ -46,6 +46,7 @@ package_app:
       - git archive --format tar HEAD | tar -xC /tmp/${CI_PROJECT_NAME}
       - slim package /tmp/${CI_PROJECT_NAME}
   artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
       - process_flow_diagram_app-1.0.2.tar.gz
     expire_in: 1 week
