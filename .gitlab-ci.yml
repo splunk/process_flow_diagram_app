@@ -42,8 +42,9 @@ package_app:
   stage: package
   script:
       - pip install splunk-packaging-toolkit
-      - slim package -o /tmp/ .
+      - mkdir ./tmp/
+      - slim package -o ./tmp/ .
   artifacts:
     paths:
-      - /tmp/process_flow_diagram_app-1.0.2.tar.gz
+      - ./tmp/process_flow_diagram_app-1.0.2.tar.gz
     expire_in: 1 week
