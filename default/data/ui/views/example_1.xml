@@ -1,0 +1,35 @@
+<dashboard>
+  <label>Process Flow Diagram Sample 1</label>
+  <description>Sample based on datasets from https://github.com/pm4py/pm4py-bpmn</description>
+  <row>
+    <panel>
+      <viz type="process_flow_diagram_app.process_flow_diagram">
+        <title>road-traffic.csv (Gradient Mode)</title>
+        <search>
+          <query>| inputlookup road-traffic.csv 
+| sort -time:timestamp
+| rename concept:name as Step, case:concept:name as corrID, time:timestamp as timestamp
+| eval _time = strptime(timestamp,"%Y-%m-%d %H:%M:%S")
+| streamstats window=2 first(_time) as NextStepTime, last(_time) as StepTime, first(Step) as NextStep, first(corrID) as NextID
+| eval duration_seconds = if(corrID != NextID, 0,((NextStepTime - StepTime) / 60 / 60) )
+| where duration_seconds &gt; 0
+| table corrID Step NextStep duration_seconds</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">424</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.aggregationMethod">mean</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.layoutEdgeSep">0</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.layoutNodeSep">0</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.layoutOrientation">LR</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.linkVertices">true</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.stepsMaxColor">#003D5E</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.stepsMinColor">#5EAD5C</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.stepsMode">gradient</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.variableStrokeWidth">true</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+  </row>
+</dashboard>

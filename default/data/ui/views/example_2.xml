@@ -1,0 +1,34 @@
+<dashboard>
+  <label>Process Flow Diagram Sample 2</label>
+  <description>Sample based on datasets from https://github.com/pm4py/pm4py-bpmn</description>
+  <row>
+    <panel>
+      <viz type="process_flow_diagram_app.process_flow_diagram">
+        <title>running-example.csv (Highlight Complete Mode)</title>
+        <search>
+          <query>| inputlookup running-example.csv 
+| sort -time:timestamp 
+| rename Activity as Step, case:concept:name as corrID, time:timestamp as timestamp
+| eval _time = strptime(timestamp,"%Y-%m-%d %H:%M:%S")
+| streamstats window=2 first(_time) as NextStepTime, last(_time) as StepTime, first(Step) as NextStep, first(corrID) as NextID
+| eval duration_seconds = if(corrID != NextID, 0,((NextStepTime - StepTime) / 60 / 60) )
+| where duration_seconds &gt; 0
+| table corrID Step NextStep duration_seconds</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">433</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.aggregationMethod">mean</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.layoutEdgeSep">180</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.layoutNodeSep">100</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.layoutOrientation">TB</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.linkVertices">false</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.stepsMaxColor">#003D5E</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.stepsMinColor">#ECF8FF</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.stepsMode">highlight</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.variableStrokeWidth">true</option>
+      </viz>
+    </panel>
+  </row>
+</dashboard>
