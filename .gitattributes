@@ -2,3 +2,4 @@
 .gitignore export-ignore
 .gitlab-ci.yml export-ignore
 .pylintrc export-ignore
+.slimignore export-ignore
