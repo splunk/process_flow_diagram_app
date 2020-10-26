@@ -1,0 +1,38 @@
+image: python:3.7
+stages:
+    - appinspect
+  # - lint
+  # - sectest
+  #  - appinspecttest
+  #  - deploy
+
+variables:
+  AWS_DEFAULT_REGION: us-west-1 # The region of our S3 bucket
+  BUCKET_NAME: gitlabpackage         # Your bucket name
+
+# delint:
+#     stage: lint
+#     script:
+#     - pip install pylint
+#     - pylint ${CI_PROJECT_DIR}/bin/*.py
+#     tags: 
+#         - docker
+
+# sectests:
+#     stage: sectest
+#     script:
+#     - pip install bandit
+#     - bandit -r ${CI_PROJECT_DIR}/bin
+#     tags: 
+#         - docker
+
+appinspect:
+    stage: appinspect
+    before_script:
+      - wget --output-document splunk-appinspect.tar.gz https://download.splunk.com/misc/appinspect/splunk-appinspect-latest.tar.gz
+      - pip install splunk-appinspect.tar.gz 
+    script:
+      - mkdir /tmp/${CI_PROJECT_NAME}
+      - git archive --format tar HEAD | tar -xC /tmp/${CI_PROJECT_NAME}
+      - ls /tmp/${CI_PROJECT_NAME}
+      - splunk-appinspect inspect /tmp/${CI_PROJECT_NAME} --mode precert --included-tags cloud
