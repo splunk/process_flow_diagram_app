@@ -42,8 +42,8 @@ package_app:
   stage: package
   script:
       - pip install splunk-packaging-toolkit
-      - mkdir ./dist/
-      - cp -r . ./dist
+      - cp -r . /tmp/dist
+      - mv /tmp/dist ./dist
       - slim package -o ./dist/ .
   artifacts:
     paths:
