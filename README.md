@@ -1,14 +1,21 @@
 # process_flow_diagram_app
-Description of the project: self-explanatory, clearly state the scope. Re-phrase and summarize JIRA's threads when necessary.
 
-Provide technical insights by referencing specific environments, frameworks, tools, libraries used (incl. versions).
+![Example](./assets/example.png)
 
-Provide link to the JIRA ticket related to this project.
+Modular visualization for process flows. 
+Based on the open source [joint.js](https://jointjs.com) library.
+
+Related FDSE Tickets:
+
+* [FDSE-679 Cardtronics](https://jira.splunk.com/browse/FDSE-679)
+* [FDSE-793 AGL](https://jira.splunk.com/browse/FDSE-793)
 
 ## Getting Started
 
 ### Installation
-Tell other users how to install your project locally. Optionally, include a gif to make the process even more clear for other people.
+
+Install the pacak
+
 
 ### Usage
 Instruct other people on how to use your project after they’ve installed it. This would also be a good place to include screen shots of your project in action.
