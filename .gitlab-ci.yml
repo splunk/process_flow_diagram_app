@@ -24,5 +24,5 @@ package_app:
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
-      - dist/  # make this dynamic, pulling from app manifest
+      - dist/*.tar.gz  # make this dynamic, pulling from app manifest
     expire_in: 1 week
