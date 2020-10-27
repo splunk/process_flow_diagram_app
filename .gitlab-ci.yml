@@ -1,4 +1,4 @@
-image: python:3.7
+image: python:3.7-buster
 stages:
     - Lint
     - Build
@@ -13,8 +13,11 @@ eslint:
 
 slim:
   stage: Build
-  script:
+  before_script:
       - pip install splunk-packaging-toolkit
+      - apt update -y && apt install nodejs npm
+  script:
+      - cd appserver/static/visualizations/process_flow_diagram && npm install
       - mkdir /tmp/${CI_PROJECT_NAME}
       - git archive --format tar HEAD | tar -xC /tmp/${CI_PROJECT_NAME}
       - slim package -o ${CI_PROJECT_NAME}/ /tmp/${CI_PROJECT_NAME}
