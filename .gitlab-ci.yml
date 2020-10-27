@@ -18,7 +18,7 @@ slim:
       - apt update -y && apt install -y nodejs npm
   script:
       - cd appserver/static/visualizations/process_flow_diagram && npm install
-      - npm run build  && cd ${CI_PROJECT_DIR}
+      - node ./node_modules/webpack/bin/webpack.js  && cd ${CI_PROJECT_DIR}
       - mkdir /tmp/${CI_PROJECT_NAME}
       - git archive --format tar HEAD | tar -xC /tmp/${CI_PROJECT_NAME}
       - ls /tmp/${CI_PROJECT_NAME}
