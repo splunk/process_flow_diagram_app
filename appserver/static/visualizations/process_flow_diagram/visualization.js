@@ -80,9 +80,9 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	    ) {
 
 	        return SplunkVisualizationBase.extend({
-	            stepsMode: 'gradient',
-	            stepsMinColor: '#ECF8FF',
-	            stepsMaxColor: '#003D5E',
+	            stepsMode: "gradient",
+	            stepsMinColor: "#ECF8FF",
+	            stepsMaxColor: "#003D5E",
 	            aggregationMethod: "mean",
 	            variableStrokeWidth: true,
 	            layoutOrientation: "TB",
@@ -93,14 +93,14 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	            initialize: function () {
 	                SplunkVisualizationBase.prototype.initialize.apply(this, arguments);
 	                this.$el = $(this.el);
-	                this.$el.append('<div style="overflow: none; width:100%; height: 100%;"> \
-	                            <div class="zoom-controls"> \
-	                            <button class="btn btn-secondary" id="zoom-in">Zoom in</button> \
-	                            <button  class="btn btn-secondary" id="zoom-out">Zoom out</button> \
-	                            <button  class="btn btn-secondary" id="reset">Reset</button>\
+	                this.$el.append("<div style=\"overflow: none; width:100%; height: 100%;\"> \
+	                            <div class=\"zoom-controls\"> \
+	                            <button class=\"btn btn-secondary\" id=\"zoom-in\">Zoom in</button> \
+	                            <button  class=\"btn btn-secondary\" id=\"zoom-out\">Zoom out</button> \
+	                            <button  class=\"btn btn-secondary\" id=\"reset\">Reset</button>\
 	                            </div>\
-	                <div id="process_flow_diagram"></div></div>');
-	                this.$processEl = $("#process_flow_diagram")
+	                <div id=\"process_flow_diagram\"></div></div>");
+	                this.$processEl = $("#process_flow_diagram");
 
 	                processFlow.initialize();
 	            },
@@ -118,27 +118,27 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	    
 	                this._getConfigParams(config);
 
-	                let aggMethod = processUtils.averageUpdate
+	                let aggMethod = processUtils.averageUpdate;
 	                switch (this.aggregationMethod) {
-	                    case 'mean':
+	                    case "mean":
 	                        break;
-	                    case 'min':
-	                        aggMethod = processUtils.minUpdate
+	                    case "min":
+	                        aggMethod = processUtils.minUpdate;
 	                        break;
-	                    case 'max':
-	                        aggMethod = processUtils.maxUpdate
+	                    case "max":
+	                        aggMethod = processUtils.maxUpdate;
 	                        break;    
 	                }
 	                
-	                precomputeResult = processFlow.preComputeGraph(data.rows, aggMethod)
-	                formatting = this._buildGraphFormatting(precomputeResult)
-	                shapes = processFlow.buildGraphShapes(precomputeResult, formatting)
+	                precomputeResult = processFlow.preComputeGraph(data.rows, aggMethod);
+	                formatting = this._buildGraphFormatting(precomputeResult);
+	                shapes = processFlow.buildGraphShapes(precomputeResult, formatting);
 	                return shapes;
 	            },
 
 	            updateView: function (shapes, config) {
 	                if (!shapes)
-	                    return false
+	                    return false;
 	                
 	                var graph = new joint.dia.Graph;
 
@@ -153,23 +153,23 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	            },
 
 	            _getConfigParams: function(config) {
-	                this.stepsMode = this._getEscapedProperty('stepsMode', config) || this.stepsMode;
-	                this.stepsMinColor = this._getEscapedProperty('stepsMinColor', config) || this.stepsMinColor;
-	                this.stepsMaxColor = this._getEscapedProperty('stepsMaxColor', config) || this.stepsMaxColor;
-	                this.layoutOrientation = this._getEscapedProperty('layoutOrientation', config) || this.layoutOrientation;
-	                this.layoutNodeSep = parseFloat(this._getEscapedProperty('layoutNodeSep', config)) || this.layoutNodeSep;
-	                this.layoutEdgeSep = parseFloat(this._getEscapedProperty('layoutEdgeSep', config)) || this.layoutEdgeSep;
-	                this.linkVertices = genUtils.normalizeBoolean(this._getEscapedProperty('linkVertices', config), { default: this.linkVertices });
+	                this.stepsMode = this._getEscapedProperty("stepsMode", config) || this.stepsMode;
+	                this.stepsMinColor = this._getEscapedProperty("stepsMinColor", config) || this.stepsMinColor;
+	                this.stepsMaxColor = this._getEscapedProperty("stepsMaxColor", config) || this.stepsMaxColor;
+	                this.layoutOrientation = this._getEscapedProperty("layoutOrientation", config) || this.layoutOrientation;
+	                this.layoutNodeSep = parseFloat(this._getEscapedProperty("layoutNodeSep", config)) || this.layoutNodeSep;
+	                this.layoutEdgeSep = parseFloat(this._getEscapedProperty("layoutEdgeSep", config)) || this.layoutEdgeSep;
+	                this.linkVertices = genUtils.normalizeBoolean(this._getEscapedProperty("linkVertices", config), { default: this.linkVertices });
 
-	                this.aggregationMethod = this._getEscapedProperty('aggregationMethod', config) || this.aggregationMethod;
-	                this.variableStrokeWidth = genUtils.normalizeBoolean(this._getEscapedProperty('variableStrokeWidth', config), { default: true });
+	                this.aggregationMethod = this._getEscapedProperty("aggregationMethod", config) || this.aggregationMethod;
+	                this.variableStrokeWidth = genUtils.normalizeBoolean(this._getEscapedProperty("variableStrokeWidth", config), { default: true });
 	            },
 
 	            _buildGraphFormatting(precomputeResult) {
 	                formatting = {
 	                    elements: new Map(),
 	                    links: new Map()
-	                }
+	                };
 	                total_journeys = precomputeResult.journeysMap.size;
 
 	                precomputeResult.elementsMap.forEach((val, key) => {
@@ -177,7 +177,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 	                    var headColor;
 
-	                    if (this.stepsMode == 'gradient'){
+	                    if (this.stepsMode == "gradient"){
 	                        headColor = d3.interpolateLab(this.stepsMinColor, this.stepsMaxColor)(step_journeys / total_journeys);
 	                    } else {
 	                        if (val.size == total_journeys) {
@@ -185,7 +185,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                        }
 	                    }
 	                    
-	                    formatting.elements.set(key, {"headColor": headColor})
+	                    formatting.elements.set(key, {"headColor": headColor});
 	                });
 
 	                precomputeResult.linksMap.forEach((val, key) => {
@@ -193,9 +193,9 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                    
 	                    let strokeWidth = 1;
 	                    if (this.variableStrokeWidth) {
-	                        strokeWidth = processUtils.mapToRange(num_from_journeys, 1, total_journeys, 1, 5)
+	                        strokeWidth = processUtils.mapToRange(num_from_journeys, 1, total_journeys, 1, 5);
 	                    }
-	                    formatting.links.set(key, {"strokeWidth": strokeWidth})
+	                    formatting.links.set(key, {"strokeWidth": strokeWidth});
 	                });
 
 	                return formatting;
@@ -218,9 +218,9 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	            _initPanZoom: function(paper) {
 	                
 	                var panAndZoom;
-	                panAndZoom = svgPanZoom(document.querySelector('#process_flow_diagram>svg'), 
+	                panAndZoom = svgPanZoom(document.querySelector("#process_flow_diagram>svg"), 
 	                    {
-	                        viewportSelector: document.querySelector('#process_flow_diagram>svg>g.joint-layers'),
+	                        viewportSelector: document.querySelector("#process_flow_diagram>svg>g.joint-layers"),
 	                        zoomEnabled: false,
 	                        controlIconsEnabled: false,                
 	                        fit: true,
@@ -229,30 +229,30 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                        panEnabled: true
 	                });
 
-	                paper.on('blank:pointerdown', function (evt, x, y) {
+	                paper.on("blank:pointerdown", function (evt, x, y) {
 	                    panAndZoom.enablePan();
 	                });
 
-	                paper.on('cell:pointerup blank:pointerup', function(cellView, event) {
+	                paper.on("cell:pointerup blank:pointerup", function(cellView, event) {
 	                        panAndZoom.disablePan();
 	                });
 
-	                document.getElementById('zoom-in').addEventListener('click', function(ev){
-	                    ev.preventDefault()
+	                document.getElementById("zoom-in").addEventListener("click", function(ev){
+	                    ev.preventDefault();
 	          
-	                    panAndZoom.zoomIn()
+	                    panAndZoom.zoomIn();
 	                  });
 	          
-	                  document.getElementById('zoom-out').addEventListener('click', function(ev){
-	                    ev.preventDefault()
+	                  document.getElementById("zoom-out").addEventListener("click", function(ev){
+	                    ev.preventDefault();
 	          
-	                    panAndZoom.zoomOut()
+	                    panAndZoom.zoomOut();
 	                  });
 	          
-	                  document.getElementById('reset').addEventListener('click', function(ev){
-	                    ev.preventDefault()
-	                    panAndZoom.resetPan()
-	                    panAndZoom.resetZoom()
+	                  document.getElementById("reset").addEventListener("click", function(ev){
+	                    ev.preventDefault();
+	                    panAndZoom.resetPan();
+	                    panAndZoom.resetZoom();
 	                  });
 	                
 	            },
@@ -56984,15 +56984,15 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	        joint,
 	        processShapes
 	    ) {
-	        let processFlow = {}
+	        let processFlow = {};
 
 	        processFlow.initialize = function () {
 	            /* Define required JointJS shapes */
-	        }
+	        };
 
 	        processFlow.initializePaper = function(el , graph) {
 
-	        }
+	        };
 
 	        processFlow.preComputeGraph = function (events, updateMeasure) {
 
@@ -57001,86 +57001,86 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                elementsMap: new Map(),
 	                linksMap: new Map(),
 	                journeysMap: new Map(),
-	            }
+	            };
 
 	            const reducer = function (context, ev) {
-	                [journeyId, fromStep, toStep, fromMeasure, ...props] = ev
+	                [journeyId, fromStep, toStep, fromMeasure, ...props] = ev;
 
 	                Array.from([fromStep, toStep]).map(step => {
 	                    if (!context.elementsMap.has(step)) {
-	                        context.elementsMap.set(step, new Map())
-	                        context.elements.push(step)
+	                        context.elementsMap.set(step, new Map());
+	                        context.elements.push(step);
 	                    }
-	                    elementJourneysMap = context.elementsMap.get(step)
-	                    elementJourneysMap.set(journeyId, journeyId)
-	                    context.journeysMap.set(journeyId, journeyId)
-	                })
+	                    elementJourneysMap = context.elementsMap.get(step);
+	                    elementJourneysMap.set(journeyId, journeyId);
+	                    context.journeysMap.set(journeyId, journeyId);
+	                });
 
-	                linkHash = (fromStep + toStep).toLowerCase()
+	                linkHash = (fromStep + toStep).toLowerCase();
 
 	                if (!context.linksMap.has(linkHash)) {
-	                    context.linksMap.set(linkHash, { 'aggMeasure': fromMeasure, 'numUpdates': 1, 'from': fromStep, 'to': toStep })
+	                    context.linksMap.set(linkHash, { "aggMeasure": fromMeasure, "numUpdates": 1, "from": fromStep, "to": toStep });
 	                } else {
-	                    let { aggMeasure, numUpdates } = context.linksMap.get(linkHash)
-	                    newAggMeasure = updateMeasure(fromMeasure, aggMeasure, numUpdates)
-	                    context.linksMap.set(linkHash, { 'from': fromStep, 'to': toStep, 'aggMeasure': newAggMeasure, 'numUpdates': numUpdates + 1 })
+	                    let { aggMeasure, numUpdates } = context.linksMap.get(linkHash);
+	                    newAggMeasure = updateMeasure(fromMeasure, aggMeasure, numUpdates);
+	                    context.linksMap.set(linkHash, { "from": fromStep, "to": toStep, "aggMeasure": newAggMeasure, "numUpdates": numUpdates + 1 });
 	                }
 
 	                return context;
-	            }
+	            };
 
-	            return _.reduce(events, reducer, context)
-	        }
+	            return _.reduce(events, reducer, context);
+	        };
 
 	        processFlow.buildGraphShapes = function (preComputedGraph, formatting) {
-	            let { elements, elementsMap, linksMap } = preComputedGraph
-	            let shapes = []
+	            let { elements, elementsMap, linksMap } = preComputedGraph;
+	            let shapes = [];
 
 	            elements.forEach(element => {
-	                elementJourneysMap = elementsMap.get(element)
-	                shapes.push(this._makeElement(elementJourneysMap.size, element, formatting.elements.get(element)))
-	            })
+	                elementJourneysMap = elementsMap.get(element);
+	                shapes.push(this._makeElement(elementJourneysMap.size, element, formatting.elements.get(element)));
+	            });
 
 	            linksMap.forEach(link => {
-	                let { from, to, aggMeasure } = link
-	                from_el = shapes.find(el => el.attr('bodyText/text') == from)
-	                to_el = shapes.find(el => el.attr('bodyText/text') == to)
-	                linkHash = (link.from + link.to).toLowerCase()
-	                shapes.push(this._makeLink(from_el, to_el, aggMeasure, formatting.links.get(linkHash)))
-	            })
+	                let { from, to, aggMeasure } = link;
+	                from_el = shapes.find(el => el.attr("bodyText/text") == from);
+	                to_el = shapes.find(el => el.attr("bodyText/text") == to);
+	                linkHash = (link.from + link.to).toLowerCase();
+	                shapes.push(this._makeLink(from_el, to_el, aggMeasure, formatting.links.get(linkHash)));
+	            });
 
 	            return shapes;
-	        }
+	        };
 
 	        processFlow._makeElement = function (head, body, formatting) {
 	            step = processShapes.Step.create(head, body, formatting.headColor);
-	            return step
-	        }
+	            return step;
+	        };
 
 	        processFlow._makeLink = function (from, to, metric, formatting) {
 	            var l = new joint.shapes.standard.Link();
-	            l.prop('source', from);
-	            l.prop('target', to);
-	            l.attr('line/strokeWidth', formatting.strokeWidth);
+	            l.prop("source", from);
+	            l.prop("target", to);
+	            l.attr("line/strokeWidth", formatting.strokeWidth);
 
 	            l.appendLabel({
 	                markup: [
 	                 {
-	                     tagName: 'rect',
-	                     selector: 'body'
+	                     tagName: "rect",
+	                     selector: "body"
 	                 },
 	                 {
-	                    tagName: 'text',
-	                    selector: 'label'
+	                    tagName: "text",
+	                    selector: "label"
 	                }      
 	                ],
 	                attrs: {
 	                    body: {
-	                        ref: 'label',
-	                        fill: '#ffffff',
-	                        stroke: 'black',
-	                        refWidth: '140%',
-	                        refHeight: '120%',
+	                        ref: "label",
+	                        fill: "#ffffff",
+	                        stroke: "black",
+	                        refWidth: "140%",
+	                        refHeight: "120%",
 	                        rx: 5,
 	                        ry: 5,
 	                        yAlignment: "middle",
@@ -57090,8 +57090,8 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                        yAlignment: "middle",
 	                        xAlignment: "middle",
 	                        text: parseFloat(metric).toFixed(2),
-	                        refX: '50%',
-	                        refY: '50%',
+	                        refX: "50%",
+	                        refY: "50%",
 	                        fill: "black",
 	                        fontFamily: "Splunk Platform Sans,Proxima Nova,Roboto,Droid,Helvetica Neue,Helvetica,Arial,sans-serif",
 	                    },
@@ -57099,11 +57099,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                position: {
 	                    distance: 0.5,
 	                }
-	            })
-	            return l
-	        }
+	            });
+	            return l;
+	        };
 
-	        return processFlow
+	        return processFlow;
 	    }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
@@ -57123,21 +57123,21 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	        graphlib,
 	        joint
 	    ) {
-	        let processShapes = {}
+	        let processShapes = {};
 
-	        processShapes.Step = joint.shapes.standard.HeaderedRectangle.define('process.Step', {
+	        processShapes.Step = joint.shapes.standard.HeaderedRectangle.define("process.Step", {
 	                attrs: {
 	                    body: {
 	                        strokeWidth: 2,
 	                    },
 	                    bodyText: {
-	                        fontFamily: 'Splunk Platform Mono,Inconsolata,Consolas,Droid Sans Mono,Monaco,Courier New,Courier,monospace',
+	                        fontFamily: "Splunk Platform Mono,Inconsolata,Consolas,Droid Sans Mono,Monaco,Courier New,Courier,monospace",
 	                    },
 	                    header: {
-	                        fill: 'grey',
+	                        fill: "grey",
 	                    },
 	                    headerText: {
-	                        fill: 'white',
+	                        fill: "white",
 	                        fontFamily: "Splunk Platform Sans,Proxima Nova,Roboto,Droid,Helvetica Neue,Helvetica,Arial,sans-serif",
 	                    }
 	                },
@@ -57151,7 +57151,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                    var step = new this();
 
 	                    var letterSize = 12;
-	                    var maxLineLength = _.max(body.split('\n'), function (l) { return l.length; }).length;
+	                    var maxLineLength = _.max(body.split("\n"), function (l) { return l.length; }).length;
 	                    var width = 2 * (letterSize * (0.4 * maxLineLength + 1));
 	                    width = width < 100 ? 100 : width;
 	                    width = width > 300 ? 300 : width;
@@ -57164,7 +57164,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                        width: width * 0.7,
 	                    });
 
-	                    step.size({ width: width })
+	                    step.size({ width: width });
 
 	                    step.attr({
 	                        header: {
@@ -57183,7 +57183,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                }
 	            });
 
-	        return processShapes
+	        return processShapes;
 	    }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
@@ -57197,30 +57197,30 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	    $,
 	    _
 	) {
-	    let processUtils = {}
+	    let processUtils = {};
 
 	    processUtils.averageUpdate = function(newMeasure, aggMeasure, numMeasures) {
-	        return Number(aggMeasure) + ((Number(newMeasure) - Number(aggMeasure)) / Number(numMeasures + 1)) 
-	    }
+	        return Number(aggMeasure) + ((Number(newMeasure) - Number(aggMeasure)) / Number(numMeasures + 1)); 
+	    };
 
 	    processUtils.minUpdate = function(newMeasure, aggMeasure) {
-	        return Math.min(Number(aggMeasure), Number(newMeasure)) 
-	    }
+	        return Math.min(Number(aggMeasure), Number(newMeasure)); 
+	    };
 
 	    processUtils.maxUpdate = function(newMeasure, aggMeasure) {
-	        return Math.max(Number(aggMeasure), Number(newMeasure)) 
-	    }
+	        return Math.max(Number(aggMeasure), Number(newMeasure)); 
+	    };
 
 
 	    processUtils.mapToRange = function(value, in_min, in_max, out_min, out_max) {
 	        return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-	    }
+	    };
 
 	    processUtils.linkHash = function(from, to) {
-	        return (from + to).toLowerCase()
-	    }
+	        return (from + to).toLowerCase();
+	    };
 
-	    return processUtils
+	    return processUtils;
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
