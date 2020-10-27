@@ -1,9 +1,9 @@
 define([
-    'jquery',
-    'underscore',
-    'dagre',
-    'graphlib',
-    'jointjs'
+    "jquery",
+    "underscore",
+    "dagre",
+    "graphlib",
+    "jointjs"
 ],
     function (
         $,
@@ -12,21 +12,21 @@ define([
         graphlib,
         joint
     ) {
-        let processShapes = {}
+        let processShapes = {};
 
-        processShapes.Step = joint.shapes.standard.HeaderedRectangle.define('process.Step', {
+        processShapes.Step = joint.shapes.standard.HeaderedRectangle.define("process.Step", {
                 attrs: {
                     body: {
                         strokeWidth: 2,
                     },
                     bodyText: {
-                        fontFamily: 'Splunk Platform Mono,Inconsolata,Consolas,Droid Sans Mono,Monaco,Courier New,Courier,monospace',
+                        fontFamily: "Splunk Platform Mono,Inconsolata,Consolas,Droid Sans Mono,Monaco,Courier New,Courier,monospace",
                     },
                     header: {
-                        fill: 'grey',
+                        fill: "grey",
                     },
                     headerText: {
-                        fill: 'white',
+                        fill: "white",
                         fontFamily: "Splunk Platform Sans,Proxima Nova,Roboto,Droid,Helvetica Neue,Helvetica,Arial,sans-serif",
                     }
                 },
@@ -40,7 +40,7 @@ define([
                     var step = new this();
 
                     var letterSize = 12;
-                    var maxLineLength = _.max(body.split('\n'), function (l) { return l.length; }).length;
+                    var maxLineLength = _.max(body.split("\n"), function (l) { return l.length; }).length;
                     var width = 2 * (letterSize * (0.4 * maxLineLength + 1));
                     width = width < 100 ? 100 : width;
                     width = width > 300 ? 300 : width;
@@ -53,7 +53,7 @@ define([
                         width: width * 0.7,
                     });
 
-                    step.size({ width: width })
+                    step.size({ width: width });
 
                     step.attr({
                         header: {
@@ -72,5 +72,5 @@ define([
                 }
             });
 
-        return processShapes
+        return processShapes;
     });
