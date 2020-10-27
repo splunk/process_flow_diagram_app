@@ -3,3 +3,5 @@
 .gitlab-ci.yml export-ignore
 .pylintrc export-ignore
 .slimignore export-ignore
+.eslintrc export-ignore
+.eslintignore export-ignore
