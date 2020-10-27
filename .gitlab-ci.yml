@@ -15,7 +15,7 @@ slim:
   stage: Build
   before_script:
       - pip install splunk-packaging-toolkit
-      - apt update -y && apt install nodejs npm
+      - apt update -y && apt install -y nodejs npm
   script:
       - cd appserver/static/visualizations/process_flow_diagram && npm install
       - mkdir /tmp/${CI_PROJECT_NAME}
