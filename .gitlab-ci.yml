@@ -1,10 +1,10 @@
 image: python:3.7
 stages:
-    - appinspect
-    - package
+    - Analysis
+    - Build
 
 appinspect:
-    stage: appinspect
+    stage: Analysis
     before_script:
       - wget --output-document splunk-appinspect.tar.gz https://download.splunk.com/misc/appinspect/splunk-appinspect-latest.tar.gz
       - pip install splunk-appinspect.tar.gz 
@@ -14,8 +14,8 @@ appinspect:
       - ls /tmp/${CI_PROJECT_NAME}
       - splunk-appinspect inspect /tmp/${CI_PROJECT_NAME} --mode precert --included-tags cloud
 
-package_app:
-  stage: package
+slim:
+  stage: Build
   script:
       - pip install splunk-packaging-toolkit
       - mkdir /tmp/${CI_PROJECT_NAME}
@@ -24,5 +24,5 @@ package_app:
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
-      - dist/*.tar.gz  # make this dynamic, pulling from app manifest
+      - dist/*
     expire_in: 1 week
