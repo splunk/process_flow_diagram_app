@@ -3,6 +3,13 @@ stages:
     - Analysis
     - Build
 
+eslint:
+  stage: Analysis
+  image: node
+  script:
+    - npm i eslint
+    - node_modules/eslint/bin/eslint.js appserver/
+
 appinspect:
     stage: Analysis
     before_script:
