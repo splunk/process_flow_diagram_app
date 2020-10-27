@@ -20,6 +20,7 @@ slim:
       - cd appserver/static/visualizations/process_flow_diagram && npm install
       - mkdir /tmp/${CI_PROJECT_NAME}
       - git archive --format tar HEAD | tar -xC /tmp/${CI_PROJECT_NAME}
+      - ls /tmp/${CI_PROJECT_NAME}
       - slim package -o ${CI_PROJECT_NAME}/ /tmp/${CI_PROJECT_NAME}
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
