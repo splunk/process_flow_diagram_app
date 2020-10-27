@@ -10,18 +10,14 @@ Related FDSE Tickets:
 * [FDSE-679 Cardtronics](https://jira.splunk.com/browse/FDSE-679)
 * [FDSE-793 AGL](https://jira.splunk.com/browse/FDSE-793)
 
-## Getting Started
+## Installation
 
-### Installation
+1. Download the app `.tar.gz` bundle
+2. Install through Splunk Enterprise UI ("Manage Apps")
 
-Install the pacak
+## Usage
 
-
-### Usage
-Instruct other people on how to use your project after they’ve installed it. This would also be a good place to include screen shots of your project in action.
-
-## Example(s)
-Add here examples of usages. Another good place to include screenshots or gifs.
+Review example dashboards provided with the app for usage reference. Generally, the modular visualization expects the process data to be supplied in the following format: `| table corrID fromStep toStep fromStepDuration`. This means that the process data needs to be transformed into this edge representation where each row in the results represents a transition instance. Transition instances that belong to the same process instance are grouped by `corrID`.
 
 ## License
-Short snippet linking to `LICENSE.md`
+Please review [`LICENSE.md`](./LICENSE.md)
