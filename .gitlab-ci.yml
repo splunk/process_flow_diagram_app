@@ -8,7 +8,7 @@ eslint:
   image: node
   script:
     - npm i eslint
-    - node_modules/eslint/bin/eslint.js --ext .js appserver/
+    - node_modules/eslint/bin/eslint.js --ext .js appserver/static/visualizations/process_flow_diagram/
 
 appinspect:
     stage: Analysis
