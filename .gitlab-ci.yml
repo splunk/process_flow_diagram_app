@@ -15,18 +15,14 @@ appinspect:
       - splunk-appinspect inspect /tmp/${CI_PROJECT_NAME} --mode precert --included-tags cloud
 
 package_app:
-  before_script:
-    - export APP_VERSION=$(cat app.manifest| jq -r '.info.id.version')
-    - export APP_NAME=$(cat app.manifest| jq -r '.info.id.name')
-    - echo $APP_VERSION
   stage: package
   script:
       - pip install splunk-packaging-toolkit
       - mkdir /tmp/${CI_PROJECT_NAME}
       - git archive --format tar HEAD | tar -xC /tmp/${CI_PROJECT_NAME}
-      - slim package /tmp/${CI_PROJECT_NAME}
+      - slim package -o dist/ /tmp/${CI_PROJECT_NAME}
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     paths:
-      - ${APP_NAME}-${APP_VERSION}.tar.gz  # make this dynamic, pulling from app manifest
+      - dist/  # make this dynamic, pulling from app manifest
     expire_in: 1 week
