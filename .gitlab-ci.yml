@@ -33,5 +33,3 @@ slim:
     paths:
       - ${CI_PROJECT_NAME}/*
     expire_in: 1 week
-  except:
-    - tags
