@@ -26,3 +26,20 @@ slim:
     paths:
       - dist/*
     expire_in: 1 week
+  except:
+    - tags
+
+slim_tagged:
+  stage: Build
+  script:
+      - pip install splunk-packaging-toolkit
+      - mkdir /tmp/${CI_PROJECT_NAME}
+      - git archive --format tar HEAD | tar -xC /tmp/${CI_PROJECT_NAME}
+      - slim package -o dist/ /tmp/${CI_PROJECT_NAME}
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    paths:
+      - dist/*
+    expire_in: 1 week
+  only:
+    - tags
