@@ -1,25 +1,15 @@
 image: python:3.7
 stages:
-    - Analysis
+    - Lint
     - Build
+    - Analysis
 
 eslint:
-  stage: Analysis
+  stage: Lint
   image: node
   script:
     - npm i eslint
     - node_modules/eslint/bin/eslint.js --ext .js appserver/
-
-appinspect:
-    stage: Analysis
-    before_script:
-      - wget --output-document splunk-appinspect.tar.gz https://download.splunk.com/misc/appinspect/splunk-appinspect-latest.tar.gz
-      - pip install splunk-appinspect.tar.gz 
-    script:
-      - mkdir /tmp/${CI_PROJECT_NAME}
-      - git archive --format tar HEAD | tar -xC /tmp/${CI_PROJECT_NAME}
-      - ls /tmp/${CI_PROJECT_NAME}
-      - splunk-appinspect inspect /tmp/${CI_PROJECT_NAME} --mode precert --included-tags cloud
 
 slim:
   stage: Build
@@ -33,3 +23,12 @@ slim:
     paths:
       - ${CI_PROJECT_NAME}/*
     expire_in: 1 week
+
+
+appinspect:
+    stage: Analysis
+    before_script:
+      - wget --output-document splunk-appinspect.tar.gz https://download.splunk.com/misc/appinspect/splunk-appinspect-latest.tar.gz
+      - pip install splunk-appinspect.tar.gz 
+    script:
+      - splunk-appinspect inspect `ls ${CI_PROJECT_NAME}/*.tar.gz | head -n 1` --mode precert --included-tags cloud
