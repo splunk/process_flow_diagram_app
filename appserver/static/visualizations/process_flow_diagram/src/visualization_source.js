@@ -1,16 +1,16 @@
 define([
-    'jquery',
-    'underscore',
-    'api/SplunkVisualizationBase',
-    'api/SplunkVisualizationUtils',
-    'util/general_utils',
-    'svg-pan-zoom',
-    'graphlib',
-    'dagre',
-    'jointjs',
-    'process_flow',
-    'process_utils',
-    'd3-interpolate'
+    "jquery",
+    "underscore",
+    "api/SplunkVisualizationBase",
+    "api/SplunkVisualizationUtils",
+    "util/general_utils",
+    "svg-pan-zoom",
+    "graphlib",
+    "dagre",
+    "jointjs",
+    "process_flow",
+    "process_utils",
+    "d3-interpolate"
 ],
     function (
         $,
@@ -28,9 +28,9 @@ define([
     ) {
 
         return SplunkVisualizationBase.extend({
-            stepsMode: 'gradient',
-            stepsMinColor: '#ECF8FF',
-            stepsMaxColor: '#003D5E',
+            stepsMode: "gradient",
+            stepsMinColor: "#ECF8FF",
+            stepsMaxColor: "#003D5E",
             aggregationMethod: "mean",
             variableStrokeWidth: true,
             layoutOrientation: "TB",
@@ -41,14 +41,14 @@ define([
             initialize: function () {
                 SplunkVisualizationBase.prototype.initialize.apply(this, arguments);
                 this.$el = $(this.el);
-                this.$el.append('<div style="overflow: none; width:100%; height: 100%;"> \
-                            <div class="zoom-controls"> \
-                            <button class="btn btn-secondary" id="zoom-in">Zoom in</button> \
-                            <button  class="btn btn-secondary" id="zoom-out">Zoom out</button> \
-                            <button  class="btn btn-secondary" id="reset">Reset</button>\
+                this.$el.append("<div style=\"overflow: none; width:100%; height: 100%;\"> \
+                            <div class=\"zoom-controls\"> \
+                            <button class=\"btn btn-secondary\" id=\"zoom-in\">Zoom in</button> \
+                            <button  class=\"btn btn-secondary\" id=\"zoom-out\">Zoom out</button> \
+                            <button  class=\"btn btn-secondary\" id=\"reset\">Reset</button>\
                             </div>\
-                <div id="process_flow_diagram"></div></div>');
-                this.$processEl = $("#process_flow_diagram")
+                <div id=\"process_flow_diagram\"></div></div>");
+                this.$processEl = $("#process_flow_diagram");
 
                 processFlow.initialize();
             },
@@ -66,27 +66,27 @@ define([
     
                 this._getConfigParams(config);
 
-                let aggMethod = processUtils.averageUpdate
+                let aggMethod = processUtils.averageUpdate;
                 switch (this.aggregationMethod) {
-                    case 'mean':
+                    case "mean":
                         break;
-                    case 'min':
-                        aggMethod = processUtils.minUpdate
+                    case "min":
+                        aggMethod = processUtils.minUpdate;
                         break;
-                    case 'max':
-                        aggMethod = processUtils.maxUpdate
+                    case "max":
+                        aggMethod = processUtils.maxUpdate;
                         break;    
                 }
                 
-                precomputeResult = processFlow.preComputeGraph(data.rows, aggMethod)
-                formatting = this._buildGraphFormatting(precomputeResult)
-                shapes = processFlow.buildGraphShapes(precomputeResult, formatting)
+                precomputeResult = processFlow.preComputeGraph(data.rows, aggMethod);
+                formatting = this._buildGraphFormatting(precomputeResult);
+                shapes = processFlow.buildGraphShapes(precomputeResult, formatting);
                 return shapes;
             },
 
             updateView: function (shapes, config) {
                 if (!shapes)
-                    return false
+                    return false;
                 
                 var graph = new joint.dia.Graph;
 
@@ -101,23 +101,23 @@ define([
             },
 
             _getConfigParams: function(config) {
-                this.stepsMode = this._getEscapedProperty('stepsMode', config) || this.stepsMode;
-                this.stepsMinColor = this._getEscapedProperty('stepsMinColor', config) || this.stepsMinColor;
-                this.stepsMaxColor = this._getEscapedProperty('stepsMaxColor', config) || this.stepsMaxColor;
-                this.layoutOrientation = this._getEscapedProperty('layoutOrientation', config) || this.layoutOrientation;
-                this.layoutNodeSep = parseFloat(this._getEscapedProperty('layoutNodeSep', config)) || this.layoutNodeSep;
-                this.layoutEdgeSep = parseFloat(this._getEscapedProperty('layoutEdgeSep', config)) || this.layoutEdgeSep;
-                this.linkVertices = genUtils.normalizeBoolean(this._getEscapedProperty('linkVertices', config), { default: this.linkVertices });
+                this.stepsMode = this._getEscapedProperty("stepsMode", config) || this.stepsMode;
+                this.stepsMinColor = this._getEscapedProperty("stepsMinColor", config) || this.stepsMinColor;
+                this.stepsMaxColor = this._getEscapedProperty("stepsMaxColor", config) || this.stepsMaxColor;
+                this.layoutOrientation = this._getEscapedProperty("layoutOrientation", config) || this.layoutOrientation;
+                this.layoutNodeSep = parseFloat(this._getEscapedProperty("layoutNodeSep", config)) || this.layoutNodeSep;
+                this.layoutEdgeSep = parseFloat(this._getEscapedProperty("layoutEdgeSep", config)) || this.layoutEdgeSep;
+                this.linkVertices = genUtils.normalizeBoolean(this._getEscapedProperty("linkVertices", config), { default: this.linkVertices });
 
-                this.aggregationMethod = this._getEscapedProperty('aggregationMethod', config) || this.aggregationMethod;
-                this.variableStrokeWidth = genUtils.normalizeBoolean(this._getEscapedProperty('variableStrokeWidth', config), { default: true });
+                this.aggregationMethod = this._getEscapedProperty("aggregationMethod", config) || this.aggregationMethod;
+                this.variableStrokeWidth = genUtils.normalizeBoolean(this._getEscapedProperty("variableStrokeWidth", config), { default: true });
             },
 
             _buildGraphFormatting(precomputeResult) {
                 formatting = {
                     elements: new Map(),
                     links: new Map()
-                }
+                };
                 total_journeys = precomputeResult.journeysMap.size;
 
                 precomputeResult.elementsMap.forEach((val, key) => {
@@ -125,7 +125,7 @@ define([
 
                     var headColor;
 
-                    if (this.stepsMode == 'gradient'){
+                    if (this.stepsMode == "gradient"){
                         headColor = d3.interpolateLab(this.stepsMinColor, this.stepsMaxColor)(step_journeys / total_journeys);
                     } else {
                         if (val.size == total_journeys) {
@@ -133,7 +133,7 @@ define([
                         }
                     }
                     
-                    formatting.elements.set(key, {"headColor": headColor})
+                    formatting.elements.set(key, {"headColor": headColor});
                 });
 
                 precomputeResult.linksMap.forEach((val, key) => {
@@ -141,9 +141,9 @@ define([
                     
                     let strokeWidth = 1;
                     if (this.variableStrokeWidth) {
-                        strokeWidth = processUtils.mapToRange(num_from_journeys, 1, total_journeys, 1, 5)
+                        strokeWidth = processUtils.mapToRange(num_from_journeys, 1, total_journeys, 1, 5);
                     }
-                    formatting.links.set(key, {"strokeWidth": strokeWidth})
+                    formatting.links.set(key, {"strokeWidth": strokeWidth});
                 });
 
                 return formatting;
@@ -166,9 +166,9 @@ define([
             _initPanZoom: function(paper) {
                 
                 var panAndZoom;
-                panAndZoom = svgPanZoom(document.querySelector('#process_flow_diagram>svg'), 
+                panAndZoom = svgPanZoom(document.querySelector("#process_flow_diagram>svg"), 
                     {
-                        viewportSelector: document.querySelector('#process_flow_diagram>svg>g.joint-layers'),
+                        viewportSelector: document.querySelector("#process_flow_diagram>svg>g.joint-layers"),
                         zoomEnabled: false,
                         controlIconsEnabled: false,                
                         fit: true,
@@ -177,30 +177,30 @@ define([
                         panEnabled: true
                 });
 
-                paper.on('blank:pointerdown', function (evt, x, y) {
+                paper.on("blank:pointerdown", function (evt, x, y) {
                     panAndZoom.enablePan();
                 });
 
-                paper.on('cell:pointerup blank:pointerup', function(cellView, event) {
+                paper.on("cell:pointerup blank:pointerup", function(cellView, event) {
                         panAndZoom.disablePan();
                 });
 
-                document.getElementById('zoom-in').addEventListener('click', function(ev){
-                    ev.preventDefault()
+                document.getElementById("zoom-in").addEventListener("click", function(ev){
+                    ev.preventDefault();
           
-                    panAndZoom.zoomIn()
+                    panAndZoom.zoomIn();
                   });
           
-                  document.getElementById('zoom-out').addEventListener('click', function(ev){
-                    ev.preventDefault()
+                  document.getElementById("zoom-out").addEventListener("click", function(ev){
+                    ev.preventDefault();
           
-                    panAndZoom.zoomOut()
+                    panAndZoom.zoomOut();
                   });
           
-                  document.getElementById('reset').addEventListener('click', function(ev){
-                    ev.preventDefault()
-                    panAndZoom.resetPan()
-                    panAndZoom.resetZoom()
+                  document.getElementById("reset").addEventListener("click", function(ev){
+                    ev.preventDefault();
+                    panAndZoom.resetPan();
+                    panAndZoom.resetZoom();
                   });
                 
             },
