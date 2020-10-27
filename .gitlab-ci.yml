@@ -35,4 +35,4 @@ appinspect:
       - wget --output-document splunk-appinspect.tar.gz https://download.splunk.com/misc/appinspect/splunk-appinspect-latest.tar.gz
       - pip install splunk-appinspect.tar.gz 
     script:
-      - splunk-appinspect inspect `ls ${CI_PROJECT_NAME}/*.tar.gz | head -n 1` --mode precert --included-tags cloud
+      - splunk-appinspect inspect `ls ${CI_PROJECT_NAME}/*.tar.gz` --mode precert --included-tags cloud
