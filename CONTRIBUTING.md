@@ -1,0 +1,1 @@
+Please note that you must agree to [Splunk's Contributor License Agreement (CLA)](https://www.splunk.com/en_us/form/contributions.html) before we can merge any pull requests that you submit. Any contributions that you make to this project will be subject to the terms of this agreement.

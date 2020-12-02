@@ -1,4 +1,4 @@
-# process_flow_diagram_app
+# Process Flow Diagram - Custom Visualization
 
 ![Example](./assets/example.png)
 
@@ -14,4 +14,4 @@ Based on the open source [joint.js](https://jointjs.com) library.
 Review example dashboards provided with the app for usage reference. Generally, the modular visualization expects the process data to be supplied in the following format: `| table corrID fromStep toStep fromStepDuration`. This means that the process data needs to be transformed into this edge representation where each row in the results represents a transition instance. Transition instances that belong to the same process instance are grouped by `corrID`.
 
 ## License
-Please review [`LICENSE.md`](./LICENSE.md)
+Process Flow Diagram - Custom Visualization is licensed under the Apache License 2.0. Please refer to [`LICENSE.md`](./LICENSE.md) for details.
