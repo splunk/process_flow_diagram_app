@@ -1,4 +1,4 @@
-define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/general_utils"], function(__WEBPACK_EXTERNAL_MODULE_218__, __WEBPACK_EXTERNAL_MODULE_219__, __WEBPACK_EXTERNAL_MODULE_220__) { return /******/ (function(modules) { // webpackBootstrap
+define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/general_utils"], function(__WEBPACK_EXTERNAL_MODULE_292__, __WEBPACK_EXTERNAL_MODULE_293__, __WEBPACK_EXTERNAL_MODULE_294__) { return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 
@@ -51,19 +51,34 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 /* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(217),
-	    __webpack_require__(228),
-	    __webpack_require__(218),
-	    __webpack_require__(219),
-	    __webpack_require__(220),
-	    __webpack_require__(221),
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 2020 Splunk Inc.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License. */
+
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(291),
+	    __webpack_require__(302),
+	    __webpack_require__(292),
+	    __webpack_require__(293),
+	    __webpack_require__(294),
+	    __webpack_require__(295),
+	    __webpack_require__(4),
 	    __webpack_require__(2),
-	    __webpack_require__(229),
 	    __webpack_require__(303),
 	    __webpack_require__(307),
 	    __webpack_require__(309),
-	    __webpack_require__(310)
+	    __webpack_require__(321),
+	    __webpack_require__(322)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function (
 	        $,
 	        _,
@@ -75,6 +90,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	        dagre,
 	        joint,
 	        processFlow,
+	        processDot,
 	        processUtils,
 	        d3
 	    ) {
@@ -89,6 +105,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	            layoutEdgeSep: 80,
 	            layoutNodeSep: 50,
 	            linkVertices: true,
+	            modeDOT: false,
 
 	            initialize: function () {
 	                SplunkVisualizationBase.prototype.initialize.apply(this, arguments);
@@ -115,8 +132,15 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	            formatData: function (data, config) {
 	                if (data.rows.length < 1)
 	                    return false;
-	    
+	                
+	                console.log(data)
+
 	                this._getConfigParams(config);
+	                
+	                if (this.modeDOT) {
+	                    graph = processDot.buildGraph(data.rows)
+	                    return graph
+	                }
 
 	                let aggMethod = processUtils.averageUpdate;
 	                switch (this.aggregationMethod) {
@@ -137,14 +161,26 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	            },
 
 	            updateView: function (shapes, config) {
-	                if (!shapes)
+	                if (!shapes) {
+	                    console.log("No shapes")
 	                    return false;
-	                
+	                }
 	                var graph = new joint.dia.Graph;
 
-	                paper = this._initPaper(graph);
-	                this._renderGraph(shapes, graph);
+	                if (this.modeDOT) {
+
+	                    graph = shapes
+	                    paper = this._initPaper(graph);
+
+	                    this._renderGraph([], graph);
+
+	                } else {
+	                    paper = this._initPaper(graph);
+
+	                    this._renderGraph(shapes, graph);
+	                }
 	                this._initPanZoom(paper);
+
 	            },
 
 	            _getEscapedProperty: function(name, config) {
@@ -160,6 +196,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	                this.layoutNodeSep = parseFloat(this._getEscapedProperty("layoutNodeSep", config)) || this.layoutNodeSep;
 	                this.layoutEdgeSep = parseFloat(this._getEscapedProperty("layoutEdgeSep", config)) || this.layoutEdgeSep;
 	                this.linkVertices = genUtils.normalizeBoolean(this._getEscapedProperty("linkVertices", config), { default: this.linkVertices });
+	                this.modeDOT = genUtils.normalizeBoolean(this._getEscapedProperty("modeDOT", config), { default: this.modeDOT });
 
 	                this.aggregationMethod = this._getEscapedProperty("aggregationMethod", config) || this.aggregationMethod;
 	                this.variableStrokeWidth = genUtils.normalizeBoolean(this._getEscapedProperty("variableStrokeWidth", config), { default: true });
@@ -258,8 +295,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	            },
 
 	            _renderGraph: function (shapes, graph) {
+	                if (shapes.length > 0) {
 	                graph.addCell(shapes);
-	                
+	                }
+	                console.log(graph)
 	                joint.layout.DirectedGraph.layout(graph, {
 	                    dagre: dagre,
 	                    graphlib: graphlib,
@@ -276,6 +315,68 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 /***/ }),
 /* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	/*
+	Copyright (c) 2012-2014 Chris Pettitt
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in
+	all copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+	THE SOFTWARE.
+	*/
+
+	module.exports = {
+	  graphlib: __webpack_require__(3),
+
+	  layout: __webpack_require__(219),
+	  debug: __webpack_require__(289),
+	  util: {
+	    time: __webpack_require__(269).time,
+	    notime: __webpack_require__(269).notime
+	  },
+	  version: __webpack_require__(290)
+	};
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	/* global window */
+
+	var graphlib;
+
+	if (true) {
+	  try {
+	    graphlib = __webpack_require__(4);
+	  } catch (e) {
+	    // continue regardless of error
+	  }
+	}
+
+	if (!graphlib) {
+	  graphlib = window.graphlib;
+	}
+
+	module.exports = graphlib;
+
+
+/***/ }),
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	/**
@@ -308,34 +409,34 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	 */
 
-	var lib = __webpack_require__(3);
+	var lib = __webpack_require__(5);
 
 	module.exports = {
 	  Graph: lib.Graph,
-	  json: __webpack_require__(202),
-	  alg: __webpack_require__(203),
+	  json: __webpack_require__(204),
+	  alg: __webpack_require__(205),
 	  version: lib.version
 	};
 
 
 /***/ }),
-/* 3 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// Includes only the "core" of graphlib
 	module.exports = {
-	  Graph: __webpack_require__(4),
-	  version: __webpack_require__(201)
+	  Graph: __webpack_require__(6),
+	  version: __webpack_require__(203)
 	};
 
 
 /***/ }),
-/* 4 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var _ = __webpack_require__(5);
+	var _ = __webpack_require__(7);
 
 	module.exports = Graph;
 
@@ -868,7 +969,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 5 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	/* global window */
@@ -878,22 +979,22 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	if (true) {
 	  try {
 	    lodash = {
-	      clone: __webpack_require__(6),
-	      constant: __webpack_require__(115),
-	      each: __webpack_require__(116),
-	      filter: __webpack_require__(125),
-	      has:  __webpack_require__(164),
-	      isArray: __webpack_require__(64),
-	      isEmpty: __webpack_require__(166),
-	      isFunction: __webpack_require__(25),
-	      isUndefined: __webpack_require__(167),
-	      keys: __webpack_require__(58),
-	      map: __webpack_require__(168),
-	      reduce: __webpack_require__(170),
-	      size: __webpack_require__(173),
-	      transform: __webpack_require__(179),
-	      union: __webpack_require__(180),
-	      values: __webpack_require__(199)
+	      clone: __webpack_require__(8),
+	      constant: __webpack_require__(117),
+	      each: __webpack_require__(118),
+	      filter: __webpack_require__(127),
+	      has:  __webpack_require__(166),
+	      isArray: __webpack_require__(66),
+	      isEmpty: __webpack_require__(168),
+	      isFunction: __webpack_require__(27),
+	      isUndefined: __webpack_require__(169),
+	      keys: __webpack_require__(60),
+	      map: __webpack_require__(170),
+	      reduce: __webpack_require__(172),
+	      size: __webpack_require__(175),
+	      transform: __webpack_require__(181),
+	      union: __webpack_require__(182),
+	      values: __webpack_require__(201)
 	    };
 	  } catch (e) {
 	    // continue regardless of error
@@ -908,10 +1009,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 6 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseClone = __webpack_require__(7);
+	var baseClone = __webpack_require__(9);
 
 	/** Used to compose bitmasks for cloning. */
 	var CLONE_SYMBOLS_FLAG = 4;
@@ -950,30 +1051,30 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 7 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Stack = __webpack_require__(8),
-	    arrayEach = __webpack_require__(52),
-	    assignValue = __webpack_require__(53),
-	    baseAssign = __webpack_require__(56),
-	    baseAssignIn = __webpack_require__(79),
-	    cloneBuffer = __webpack_require__(83),
-	    copyArray = __webpack_require__(84),
-	    copySymbols = __webpack_require__(85),
-	    copySymbolsIn = __webpack_require__(89),
-	    getAllKeys = __webpack_require__(93),
-	    getAllKeysIn = __webpack_require__(95),
-	    getTag = __webpack_require__(96),
-	    initCloneArray = __webpack_require__(101),
-	    initCloneByTag = __webpack_require__(102),
-	    initCloneObject = __webpack_require__(109),
-	    isArray = __webpack_require__(64),
-	    isBuffer = __webpack_require__(65),
-	    isMap = __webpack_require__(111),
-	    isObject = __webpack_require__(32),
-	    isSet = __webpack_require__(113),
-	    keys = __webpack_require__(58);
+	var Stack = __webpack_require__(10),
+	    arrayEach = __webpack_require__(54),
+	    assignValue = __webpack_require__(55),
+	    baseAssign = __webpack_require__(58),
+	    baseAssignIn = __webpack_require__(81),
+	    cloneBuffer = __webpack_require__(85),
+	    copyArray = __webpack_require__(86),
+	    copySymbols = __webpack_require__(87),
+	    copySymbolsIn = __webpack_require__(91),
+	    getAllKeys = __webpack_require__(95),
+	    getAllKeysIn = __webpack_require__(97),
+	    getTag = __webpack_require__(98),
+	    initCloneArray = __webpack_require__(103),
+	    initCloneByTag = __webpack_require__(104),
+	    initCloneObject = __webpack_require__(111),
+	    isArray = __webpack_require__(66),
+	    isBuffer = __webpack_require__(67),
+	    isMap = __webpack_require__(113),
+	    isObject = __webpack_require__(34),
+	    isSet = __webpack_require__(115),
+	    keys = __webpack_require__(60);
 
 	/** Used to compose bitmasks for cloning. */
 	var CLONE_DEEP_FLAG = 1,
@@ -1121,15 +1222,15 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 8 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var ListCache = __webpack_require__(9),
-	    stackClear = __webpack_require__(17),
-	    stackDelete = __webpack_require__(18),
-	    stackGet = __webpack_require__(19),
-	    stackHas = __webpack_require__(20),
-	    stackSet = __webpack_require__(21);
+	var ListCache = __webpack_require__(11),
+	    stackClear = __webpack_require__(19),
+	    stackDelete = __webpack_require__(20),
+	    stackGet = __webpack_require__(21),
+	    stackHas = __webpack_require__(22),
+	    stackSet = __webpack_require__(23);
 
 	/**
 	 * Creates a stack cache object to store key-value pairs.
@@ -1154,14 +1255,14 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var listCacheClear = __webpack_require__(10),
-	    listCacheDelete = __webpack_require__(11),
-	    listCacheGet = __webpack_require__(14),
-	    listCacheHas = __webpack_require__(15),
-	    listCacheSet = __webpack_require__(16);
+	var listCacheClear = __webpack_require__(12),
+	    listCacheDelete = __webpack_require__(13),
+	    listCacheGet = __webpack_require__(16),
+	    listCacheHas = __webpack_require__(17),
+	    listCacheSet = __webpack_require__(18);
 
 	/**
 	 * Creates an list cache object.
@@ -1192,7 +1293,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports) {
 
 	/**
@@ -1211,10 +1312,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var assocIndexOf = __webpack_require__(12);
+	var assocIndexOf = __webpack_require__(14);
 
 	/** Used for built-in method references. */
 	var arrayProto = Array.prototype;
@@ -1252,10 +1353,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var eq = __webpack_require__(13);
+	var eq = __webpack_require__(15);
 
 	/**
 	 * Gets the index at which the `key` is found in `array` of key-value pairs.
@@ -1279,7 +1380,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports) {
 
 	/**
@@ -1322,10 +1423,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var assocIndexOf = __webpack_require__(12);
+	var assocIndexOf = __webpack_require__(14);
 
 	/**
 	 * Gets the list cache value for `key`.
@@ -1347,10 +1448,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 15 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var assocIndexOf = __webpack_require__(12);
+	var assocIndexOf = __webpack_require__(14);
 
 	/**
 	 * Checks if a list cache value for `key` exists.
@@ -1369,10 +1470,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 16 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var assocIndexOf = __webpack_require__(12);
+	var assocIndexOf = __webpack_require__(14);
 
 	/**
 	 * Sets the list cache `key` to `value`.
@@ -1401,10 +1502,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 17 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var ListCache = __webpack_require__(9);
+	var ListCache = __webpack_require__(11);
 
 	/**
 	 * Removes all key-value entries from the stack.
@@ -1422,7 +1523,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 18 */
+/* 20 */
 /***/ (function(module, exports) {
 
 	/**
@@ -1446,7 +1547,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 19 */
+/* 21 */
 /***/ (function(module, exports) {
 
 	/**
@@ -1466,7 +1567,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 20 */
+/* 22 */
 /***/ (function(module, exports) {
 
 	/**
@@ -1486,12 +1587,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 21 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var ListCache = __webpack_require__(9),
-	    Map = __webpack_require__(22),
-	    MapCache = __webpack_require__(37);
+	var ListCache = __webpack_require__(11),
+	    Map = __webpack_require__(24),
+	    MapCache = __webpack_require__(39);
 
 	/** Used as the size to enable large array optimizations. */
 	var LARGE_ARRAY_SIZE = 200;
@@ -1526,11 +1627,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 22 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getNative = __webpack_require__(23),
-	    root = __webpack_require__(28);
+	var getNative = __webpack_require__(25),
+	    root = __webpack_require__(30);
 
 	/* Built-in method references that are verified to be native. */
 	var Map = getNative(root, 'Map');
@@ -1539,11 +1640,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 23 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseIsNative = __webpack_require__(24),
-	    getValue = __webpack_require__(36);
+	var baseIsNative = __webpack_require__(26),
+	    getValue = __webpack_require__(38);
 
 	/**
 	 * Gets the native function at `key` of `object`.
@@ -1562,13 +1663,13 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 24 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isFunction = __webpack_require__(25),
-	    isMasked = __webpack_require__(33),
-	    isObject = __webpack_require__(32),
-	    toSource = __webpack_require__(35);
+	var isFunction = __webpack_require__(27),
+	    isMasked = __webpack_require__(35),
+	    isObject = __webpack_require__(34),
+	    toSource = __webpack_require__(37);
 
 	/**
 	 * Used to match `RegExp`
@@ -1615,11 +1716,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 25 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseGetTag = __webpack_require__(26),
-	    isObject = __webpack_require__(32);
+	var baseGetTag = __webpack_require__(28),
+	    isObject = __webpack_require__(34);
 
 	/** `Object#toString` result references. */
 	var asyncTag = '[object AsyncFunction]',
@@ -1658,12 +1759,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 26 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Symbol = __webpack_require__(27),
-	    getRawTag = __webpack_require__(30),
-	    objectToString = __webpack_require__(31);
+	var Symbol = __webpack_require__(29),
+	    getRawTag = __webpack_require__(32),
+	    objectToString = __webpack_require__(33);
 
 	/** `Object#toString` result references. */
 	var nullTag = '[object Null]',
@@ -1692,10 +1793,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 27 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var root = __webpack_require__(28);
+	var root = __webpack_require__(30);
 
 	/** Built-in value references. */
 	var Symbol = root.Symbol;
@@ -1704,10 +1805,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 28 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var freeGlobal = __webpack_require__(29);
+	var freeGlobal = __webpack_require__(31);
 
 	/** Detect free variable `self`. */
 	var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
@@ -1719,7 +1820,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 29 */
+/* 31 */
 /***/ (function(module, exports) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/** Detect free variable `global` from Node.js. */
@@ -1730,10 +1831,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ }),
-/* 30 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Symbol = __webpack_require__(27);
+	var Symbol = __webpack_require__(29);
 
 	/** Used for built-in method references. */
 	var objectProto = Object.prototype;
@@ -1782,7 +1883,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 31 */
+/* 33 */
 /***/ (function(module, exports) {
 
 	/** Used for built-in method references. */
@@ -1810,7 +1911,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 32 */
+/* 34 */
 /***/ (function(module, exports) {
 
 	/**
@@ -1847,10 +1948,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 33 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var coreJsData = __webpack_require__(34);
+	var coreJsData = __webpack_require__(36);
 
 	/** Used to detect methods masquerading as native. */
 	var maskSrcKey = (function() {
@@ -1873,10 +1974,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 34 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var root = __webpack_require__(28);
+	var root = __webpack_require__(30);
 
 	/** Used to detect overreaching core-js shims. */
 	var coreJsData = root['__core-js_shared__'];
@@ -1885,7 +1986,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 35 */
+/* 37 */
 /***/ (function(module, exports) {
 
 	/** Used for built-in method references. */
@@ -1917,7 +2018,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 36 */
+/* 38 */
 /***/ (function(module, exports) {
 
 	/**
@@ -1936,14 +2037,14 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 37 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var mapCacheClear = __webpack_require__(38),
-	    mapCacheDelete = __webpack_require__(46),
-	    mapCacheGet = __webpack_require__(49),
-	    mapCacheHas = __webpack_require__(50),
-	    mapCacheSet = __webpack_require__(51);
+	var mapCacheClear = __webpack_require__(40),
+	    mapCacheDelete = __webpack_require__(48),
+	    mapCacheGet = __webpack_require__(51),
+	    mapCacheHas = __webpack_require__(52),
+	    mapCacheSet = __webpack_require__(53);
 
 	/**
 	 * Creates a map cache object to store key-value pairs.
@@ -1974,12 +2075,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 38 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Hash = __webpack_require__(39),
-	    ListCache = __webpack_require__(9),
-	    Map = __webpack_require__(22);
+	var Hash = __webpack_require__(41),
+	    ListCache = __webpack_require__(11),
+	    Map = __webpack_require__(24);
 
 	/**
 	 * Removes all key-value entries from the map.
@@ -2001,14 +2102,14 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 39 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var hashClear = __webpack_require__(40),
-	    hashDelete = __webpack_require__(42),
-	    hashGet = __webpack_require__(43),
-	    hashHas = __webpack_require__(44),
-	    hashSet = __webpack_require__(45);
+	var hashClear = __webpack_require__(42),
+	    hashDelete = __webpack_require__(44),
+	    hashGet = __webpack_require__(45),
+	    hashHas = __webpack_require__(46),
+	    hashSet = __webpack_require__(47);
 
 	/**
 	 * Creates a hash object.
@@ -2039,10 +2140,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 40 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var nativeCreate = __webpack_require__(41);
+	var nativeCreate = __webpack_require__(43);
 
 	/**
 	 * Removes all key-value entries from the hash.
@@ -2060,10 +2161,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 41 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getNative = __webpack_require__(23);
+	var getNative = __webpack_require__(25);
 
 	/* Built-in method references that are verified to be native. */
 	var nativeCreate = getNative(Object, 'create');
@@ -2072,7 +2173,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 42 */
+/* 44 */
 /***/ (function(module, exports) {
 
 	/**
@@ -2095,10 +2196,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 43 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var nativeCreate = __webpack_require__(41);
+	var nativeCreate = __webpack_require__(43);
 
 	/** Used to stand-in for `undefined` hash values. */
 	var HASH_UNDEFINED = '__lodash_hash_undefined__';
@@ -2131,10 +2232,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 44 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var nativeCreate = __webpack_require__(41);
+	var nativeCreate = __webpack_require__(43);
 
 	/** Used for built-in method references. */
 	var objectProto = Object.prototype;
@@ -2160,10 +2261,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 45 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var nativeCreate = __webpack_require__(41);
+	var nativeCreate = __webpack_require__(43);
 
 	/** Used to stand-in for `undefined` hash values. */
 	var HASH_UNDEFINED = '__lodash_hash_undefined__';
@@ -2189,10 +2290,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 46 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getMapData = __webpack_require__(47);
+	var getMapData = __webpack_require__(49);
 
 	/**
 	 * Removes `key` and its value from the map.
@@ -2213,10 +2314,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 47 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isKeyable = __webpack_require__(48);
+	var isKeyable = __webpack_require__(50);
 
 	/**
 	 * Gets the data for `map`.
@@ -2237,7 +2338,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 48 */
+/* 50 */
 /***/ (function(module, exports) {
 
 	/**
@@ -2258,10 +2359,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 49 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getMapData = __webpack_require__(47);
+	var getMapData = __webpack_require__(49);
 
 	/**
 	 * Gets the map value for `key`.
@@ -2280,10 +2381,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 50 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getMapData = __webpack_require__(47);
+	var getMapData = __webpack_require__(49);
 
 	/**
 	 * Checks if a map value for `key` exists.
@@ -2302,10 +2403,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 51 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getMapData = __webpack_require__(47);
+	var getMapData = __webpack_require__(49);
 
 	/**
 	 * Sets the map `key` to `value`.
@@ -2330,7 +2431,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 52 */
+/* 54 */
 /***/ (function(module, exports) {
 
 	/**
@@ -2358,11 +2459,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 53 */
+/* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseAssignValue = __webpack_require__(54),
-	    eq = __webpack_require__(13);
+	var baseAssignValue = __webpack_require__(56),
+	    eq = __webpack_require__(15);
 
 	/** Used for built-in method references. */
 	var objectProto = Object.prototype;
@@ -2392,10 +2493,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 54 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var defineProperty = __webpack_require__(55);
+	var defineProperty = __webpack_require__(57);
 
 	/**
 	 * The base implementation of `assignValue` and `assignMergeValue` without
@@ -2423,10 +2524,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 55 */
+/* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getNative = __webpack_require__(23);
+	var getNative = __webpack_require__(25);
 
 	var defineProperty = (function() {
 	  try {
@@ -2440,11 +2541,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 56 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var copyObject = __webpack_require__(57),
-	    keys = __webpack_require__(58);
+	var copyObject = __webpack_require__(59),
+	    keys = __webpack_require__(60);
 
 	/**
 	 * The base implementation of `_.assign` without support for multiple sources
@@ -2463,11 +2564,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 57 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var assignValue = __webpack_require__(53),
-	    baseAssignValue = __webpack_require__(54);
+	var assignValue = __webpack_require__(55),
+	    baseAssignValue = __webpack_require__(56);
 
 	/**
 	 * Copies properties of `source` to `object`.
@@ -2509,12 +2610,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 58 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayLikeKeys = __webpack_require__(59),
-	    baseKeys = __webpack_require__(74),
-	    isArrayLike = __webpack_require__(78);
+	var arrayLikeKeys = __webpack_require__(61),
+	    baseKeys = __webpack_require__(76),
+	    isArrayLike = __webpack_require__(80);
 
 	/**
 	 * Creates an array of the own enumerable property names of `object`.
@@ -2552,15 +2653,15 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 59 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseTimes = __webpack_require__(60),
-	    isArguments = __webpack_require__(61),
-	    isArray = __webpack_require__(64),
-	    isBuffer = __webpack_require__(65),
-	    isIndex = __webpack_require__(68),
-	    isTypedArray = __webpack_require__(69);
+	var baseTimes = __webpack_require__(62),
+	    isArguments = __webpack_require__(63),
+	    isArray = __webpack_require__(66),
+	    isBuffer = __webpack_require__(67),
+	    isIndex = __webpack_require__(70),
+	    isTypedArray = __webpack_require__(71);
 
 	/** Used for built-in method references. */
 	var objectProto = Object.prototype;
@@ -2607,7 +2708,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 60 */
+/* 62 */
 /***/ (function(module, exports) {
 
 	/**
@@ -2633,11 +2734,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 61 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseIsArguments = __webpack_require__(62),
-	    isObjectLike = __webpack_require__(63);
+	var baseIsArguments = __webpack_require__(64),
+	    isObjectLike = __webpack_require__(65);
 
 	/** Used for built-in method references. */
 	var objectProto = Object.prototype;
@@ -2675,11 +2776,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 62 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseGetTag = __webpack_require__(26),
-	    isObjectLike = __webpack_require__(63);
+	var baseGetTag = __webpack_require__(28),
+	    isObjectLike = __webpack_require__(65);
 
 	/** `Object#toString` result references. */
 	var argsTag = '[object Arguments]';
@@ -2699,7 +2800,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 63 */
+/* 65 */
 /***/ (function(module, exports) {
 
 	/**
@@ -2734,7 +2835,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 64 */
+/* 66 */
 /***/ (function(module, exports) {
 
 	/**
@@ -2766,11 +2867,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 65 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(module) {var root = __webpack_require__(28),
-	    stubFalse = __webpack_require__(67);
+	/* WEBPACK VAR INJECTION */(function(module) {var root = __webpack_require__(30),
+	    stubFalse = __webpack_require__(69);
 
 	/** Detect free variable `exports`. */
 	var freeExports = typeof exports == 'object' && exports && !exports.nodeType && exports;
@@ -2808,10 +2909,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 	module.exports = isBuffer;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(66)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(68)(module)))
 
 /***/ }),
-/* 66 */
+/* 68 */
 /***/ (function(module, exports) {
 
 	module.exports = function(module) {
@@ -2827,7 +2928,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 67 */
+/* 69 */
 /***/ (function(module, exports) {
 
 	/**
@@ -2851,7 +2952,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 68 */
+/* 70 */
 /***/ (function(module, exports) {
 
 	/** Used as references for various `Number` constants. */
@@ -2882,12 +2983,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 69 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseIsTypedArray = __webpack_require__(70),
-	    baseUnary = __webpack_require__(72),
-	    nodeUtil = __webpack_require__(73);
+	var baseIsTypedArray = __webpack_require__(72),
+	    baseUnary = __webpack_require__(74),
+	    nodeUtil = __webpack_require__(75);
 
 	/* Node.js helper references. */
 	var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
@@ -2915,12 +3016,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 70 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseGetTag = __webpack_require__(26),
-	    isLength = __webpack_require__(71),
-	    isObjectLike = __webpack_require__(63);
+	var baseGetTag = __webpack_require__(28),
+	    isLength = __webpack_require__(73),
+	    isObjectLike = __webpack_require__(65);
 
 	/** `Object#toString` result references. */
 	var argsTag = '[object Arguments]',
@@ -2981,7 +3082,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 71 */
+/* 73 */
 /***/ (function(module, exports) {
 
 	/** Used as references for various `Number` constants. */
@@ -3022,7 +3123,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 72 */
+/* 74 */
 /***/ (function(module, exports) {
 
 	/**
@@ -3042,10 +3143,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 73 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(module) {var freeGlobal = __webpack_require__(29);
+	/* WEBPACK VAR INJECTION */(function(module) {var freeGlobal = __webpack_require__(31);
 
 	/** Detect free variable `exports`. */
 	var freeExports = typeof exports == 'object' && exports && !exports.nodeType && exports;
@@ -3076,14 +3177,14 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 	module.exports = nodeUtil;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(66)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(68)(module)))
 
 /***/ }),
-/* 74 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isPrototype = __webpack_require__(75),
-	    nativeKeys = __webpack_require__(76);
+	var isPrototype = __webpack_require__(77),
+	    nativeKeys = __webpack_require__(78);
 
 	/** Used for built-in method references. */
 	var objectProto = Object.prototype;
@@ -3115,7 +3216,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 75 */
+/* 77 */
 /***/ (function(module, exports) {
 
 	/** Used for built-in method references. */
@@ -3139,10 +3240,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 76 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var overArg = __webpack_require__(77);
+	var overArg = __webpack_require__(79);
 
 	/* Built-in method references for those with the same name as other `lodash` methods. */
 	var nativeKeys = overArg(Object.keys, Object);
@@ -3151,7 +3252,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 77 */
+/* 79 */
 /***/ (function(module, exports) {
 
 	/**
@@ -3172,11 +3273,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 78 */
+/* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isFunction = __webpack_require__(25),
-	    isLength = __webpack_require__(71);
+	var isFunction = __webpack_require__(27),
+	    isLength = __webpack_require__(73);
 
 	/**
 	 * Checks if `value` is array-like. A value is considered array-like if it's
@@ -3211,11 +3312,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 79 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var copyObject = __webpack_require__(57),
-	    keysIn = __webpack_require__(80);
+	var copyObject = __webpack_require__(59),
+	    keysIn = __webpack_require__(82);
 
 	/**
 	 * The base implementation of `_.assignIn` without support for multiple sources
@@ -3234,12 +3335,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 80 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayLikeKeys = __webpack_require__(59),
-	    baseKeysIn = __webpack_require__(81),
-	    isArrayLike = __webpack_require__(78);
+	var arrayLikeKeys = __webpack_require__(61),
+	    baseKeysIn = __webpack_require__(83),
+	    isArrayLike = __webpack_require__(80);
 
 	/**
 	 * Creates an array of the own and inherited enumerable property names of `object`.
@@ -3272,12 +3373,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 81 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(32),
-	    isPrototype = __webpack_require__(75),
-	    nativeKeysIn = __webpack_require__(82);
+	var isObject = __webpack_require__(34),
+	    isPrototype = __webpack_require__(77),
+	    nativeKeysIn = __webpack_require__(84);
 
 	/** Used for built-in method references. */
 	var objectProto = Object.prototype;
@@ -3311,7 +3412,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 82 */
+/* 84 */
 /***/ (function(module, exports) {
 
 	/**
@@ -3337,10 +3438,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 83 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(module) {var root = __webpack_require__(28);
+	/* WEBPACK VAR INJECTION */(function(module) {var root = __webpack_require__(30);
 
 	/** Detect free variable `exports`. */
 	var freeExports = typeof exports == 'object' && exports && !exports.nodeType && exports;
@@ -3376,10 +3477,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 	module.exports = cloneBuffer;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(66)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(68)(module)))
 
 /***/ }),
-/* 84 */
+/* 86 */
 /***/ (function(module, exports) {
 
 	/**
@@ -3405,11 +3506,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 85 */
+/* 87 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var copyObject = __webpack_require__(57),
-	    getSymbols = __webpack_require__(86);
+	var copyObject = __webpack_require__(59),
+	    getSymbols = __webpack_require__(88);
 
 	/**
 	 * Copies own symbols of `source` to `object`.
@@ -3427,11 +3528,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 86 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayFilter = __webpack_require__(87),
-	    stubArray = __webpack_require__(88);
+	var arrayFilter = __webpack_require__(89),
+	    stubArray = __webpack_require__(90);
 
 	/** Used for built-in method references. */
 	var objectProto = Object.prototype;
@@ -3463,7 +3564,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 87 */
+/* 89 */
 /***/ (function(module, exports) {
 
 	/**
@@ -3494,7 +3595,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 88 */
+/* 90 */
 /***/ (function(module, exports) {
 
 	/**
@@ -3523,11 +3624,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 89 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var copyObject = __webpack_require__(57),
-	    getSymbolsIn = __webpack_require__(90);
+	var copyObject = __webpack_require__(59),
+	    getSymbolsIn = __webpack_require__(92);
 
 	/**
 	 * Copies own and inherited symbols of `source` to `object`.
@@ -3545,13 +3646,13 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 90 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayPush = __webpack_require__(91),
-	    getPrototype = __webpack_require__(92),
-	    getSymbols = __webpack_require__(86),
-	    stubArray = __webpack_require__(88);
+	var arrayPush = __webpack_require__(93),
+	    getPrototype = __webpack_require__(94),
+	    getSymbols = __webpack_require__(88),
+	    stubArray = __webpack_require__(90);
 
 	/* Built-in method references for those with the same name as other `lodash` methods. */
 	var nativeGetSymbols = Object.getOwnPropertySymbols;
@@ -3576,7 +3677,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 91 */
+/* 93 */
 /***/ (function(module, exports) {
 
 	/**
@@ -3602,10 +3703,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 92 */
+/* 94 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var overArg = __webpack_require__(77);
+	var overArg = __webpack_require__(79);
 
 	/** Built-in value references. */
 	var getPrototype = overArg(Object.getPrototypeOf, Object);
@@ -3614,12 +3715,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 93 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseGetAllKeys = __webpack_require__(94),
-	    getSymbols = __webpack_require__(86),
-	    keys = __webpack_require__(58);
+	var baseGetAllKeys = __webpack_require__(96),
+	    getSymbols = __webpack_require__(88),
+	    keys = __webpack_require__(60);
 
 	/**
 	 * Creates an array of own enumerable property names and symbols of `object`.
@@ -3636,11 +3737,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 94 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayPush = __webpack_require__(91),
-	    isArray = __webpack_require__(64);
+	var arrayPush = __webpack_require__(93),
+	    isArray = __webpack_require__(66);
 
 	/**
 	 * The base implementation of `getAllKeys` and `getAllKeysIn` which uses
@@ -3662,12 +3763,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 95 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseGetAllKeys = __webpack_require__(94),
-	    getSymbolsIn = __webpack_require__(90),
-	    keysIn = __webpack_require__(80);
+	var baseGetAllKeys = __webpack_require__(96),
+	    getSymbolsIn = __webpack_require__(92),
+	    keysIn = __webpack_require__(82);
 
 	/**
 	 * Creates an array of own and inherited enumerable property names and
@@ -3685,16 +3786,16 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 96 */
+/* 98 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var DataView = __webpack_require__(97),
-	    Map = __webpack_require__(22),
-	    Promise = __webpack_require__(98),
-	    Set = __webpack_require__(99),
-	    WeakMap = __webpack_require__(100),
-	    baseGetTag = __webpack_require__(26),
-	    toSource = __webpack_require__(35);
+	var DataView = __webpack_require__(99),
+	    Map = __webpack_require__(24),
+	    Promise = __webpack_require__(100),
+	    Set = __webpack_require__(101),
+	    WeakMap = __webpack_require__(102),
+	    baseGetTag = __webpack_require__(28),
+	    toSource = __webpack_require__(37);
 
 	/** `Object#toString` result references. */
 	var mapTag = '[object Map]',
@@ -3749,11 +3850,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 97 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getNative = __webpack_require__(23),
-	    root = __webpack_require__(28);
+	var getNative = __webpack_require__(25),
+	    root = __webpack_require__(30);
 
 	/* Built-in method references that are verified to be native. */
 	var DataView = getNative(root, 'DataView');
@@ -3762,11 +3863,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 98 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getNative = __webpack_require__(23),
-	    root = __webpack_require__(28);
+	var getNative = __webpack_require__(25),
+	    root = __webpack_require__(30);
 
 	/* Built-in method references that are verified to be native. */
 	var Promise = getNative(root, 'Promise');
@@ -3775,11 +3876,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 99 */
+/* 101 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getNative = __webpack_require__(23),
-	    root = __webpack_require__(28);
+	var getNative = __webpack_require__(25),
+	    root = __webpack_require__(30);
 
 	/* Built-in method references that are verified to be native. */
 	var Set = getNative(root, 'Set');
@@ -3788,11 +3889,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 100 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getNative = __webpack_require__(23),
-	    root = __webpack_require__(28);
+	var getNative = __webpack_require__(25),
+	    root = __webpack_require__(30);
 
 	/* Built-in method references that are verified to be native. */
 	var WeakMap = getNative(root, 'WeakMap');
@@ -3801,7 +3902,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 101 */
+/* 103 */
 /***/ (function(module, exports) {
 
 	/** Used for built-in method references. */
@@ -3833,14 +3934,14 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 102 */
+/* 104 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var cloneArrayBuffer = __webpack_require__(103),
-	    cloneDataView = __webpack_require__(105),
-	    cloneRegExp = __webpack_require__(106),
-	    cloneSymbol = __webpack_require__(107),
-	    cloneTypedArray = __webpack_require__(108);
+	var cloneArrayBuffer = __webpack_require__(105),
+	    cloneDataView = __webpack_require__(107),
+	    cloneRegExp = __webpack_require__(108),
+	    cloneSymbol = __webpack_require__(109),
+	    cloneTypedArray = __webpack_require__(110);
 
 	/** `Object#toString` result references. */
 	var boolTag = '[object Boolean]',
@@ -3916,10 +4017,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 103 */
+/* 105 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Uint8Array = __webpack_require__(104);
+	var Uint8Array = __webpack_require__(106);
 
 	/**
 	 * Creates a clone of `arrayBuffer`.
@@ -3938,10 +4039,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 104 */
+/* 106 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var root = __webpack_require__(28);
+	var root = __webpack_require__(30);
 
 	/** Built-in value references. */
 	var Uint8Array = root.Uint8Array;
@@ -3950,10 +4051,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 105 */
+/* 107 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var cloneArrayBuffer = __webpack_require__(103);
+	var cloneArrayBuffer = __webpack_require__(105);
 
 	/**
 	 * Creates a clone of `dataView`.
@@ -3972,7 +4073,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 106 */
+/* 108 */
 /***/ (function(module, exports) {
 
 	/** Used to match `RegExp` flags from their coerced string values. */
@@ -3995,10 +4096,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 107 */
+/* 109 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Symbol = __webpack_require__(27);
+	var Symbol = __webpack_require__(29);
 
 	/** Used to convert symbols to primitives and strings. */
 	var symbolProto = Symbol ? Symbol.prototype : undefined,
@@ -4019,10 +4120,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 108 */
+/* 110 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var cloneArrayBuffer = __webpack_require__(103);
+	var cloneArrayBuffer = __webpack_require__(105);
 
 	/**
 	 * Creates a clone of `typedArray`.
@@ -4041,12 +4142,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 109 */
+/* 111 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseCreate = __webpack_require__(110),
-	    getPrototype = __webpack_require__(92),
-	    isPrototype = __webpack_require__(75);
+	var baseCreate = __webpack_require__(112),
+	    getPrototype = __webpack_require__(94),
+	    isPrototype = __webpack_require__(77);
 
 	/**
 	 * Initializes an object clone.
@@ -4065,10 +4166,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 110 */
+/* 112 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(32);
+	var isObject = __webpack_require__(34);
 
 	/** Built-in value references. */
 	var objectCreate = Object.create;
@@ -4101,12 +4202,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 111 */
+/* 113 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseIsMap = __webpack_require__(112),
-	    baseUnary = __webpack_require__(72),
-	    nodeUtil = __webpack_require__(73);
+	var baseIsMap = __webpack_require__(114),
+	    baseUnary = __webpack_require__(74),
+	    nodeUtil = __webpack_require__(75);
 
 	/* Node.js helper references. */
 	var nodeIsMap = nodeUtil && nodeUtil.isMap;
@@ -4134,11 +4235,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 112 */
+/* 114 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getTag = __webpack_require__(96),
-	    isObjectLike = __webpack_require__(63);
+	var getTag = __webpack_require__(98),
+	    isObjectLike = __webpack_require__(65);
 
 	/** `Object#toString` result references. */
 	var mapTag = '[object Map]';
@@ -4158,12 +4259,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 113 */
+/* 115 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseIsSet = __webpack_require__(114),
-	    baseUnary = __webpack_require__(72),
-	    nodeUtil = __webpack_require__(73);
+	var baseIsSet = __webpack_require__(116),
+	    baseUnary = __webpack_require__(74),
+	    nodeUtil = __webpack_require__(75);
 
 	/* Node.js helper references. */
 	var nodeIsSet = nodeUtil && nodeUtil.isSet;
@@ -4191,11 +4292,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 114 */
+/* 116 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getTag = __webpack_require__(96),
-	    isObjectLike = __webpack_require__(63);
+	var getTag = __webpack_require__(98),
+	    isObjectLike = __webpack_require__(65);
 
 	/** `Object#toString` result references. */
 	var setTag = '[object Set]';
@@ -4215,7 +4316,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 115 */
+/* 117 */
 /***/ (function(module, exports) {
 
 	/**
@@ -4247,20 +4348,20 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 116 */
+/* 118 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(117);
+	module.exports = __webpack_require__(119);
 
 
 /***/ }),
-/* 117 */
+/* 119 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayEach = __webpack_require__(52),
-	    baseEach = __webpack_require__(118),
-	    castFunction = __webpack_require__(123),
-	    isArray = __webpack_require__(64);
+	var arrayEach = __webpack_require__(54),
+	    baseEach = __webpack_require__(120),
+	    castFunction = __webpack_require__(125),
+	    isArray = __webpack_require__(66);
 
 	/**
 	 * Iterates over elements of `collection` and invokes `iteratee` for each element.
@@ -4301,11 +4402,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 118 */
+/* 120 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseForOwn = __webpack_require__(119),
-	    createBaseEach = __webpack_require__(122);
+	var baseForOwn = __webpack_require__(121),
+	    createBaseEach = __webpack_require__(124);
 
 	/**
 	 * The base implementation of `_.forEach` without support for iteratee shorthands.
@@ -4321,11 +4422,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 119 */
+/* 121 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseFor = __webpack_require__(120),
-	    keys = __webpack_require__(58);
+	var baseFor = __webpack_require__(122),
+	    keys = __webpack_require__(60);
 
 	/**
 	 * The base implementation of `_.forOwn` without support for iteratee shorthands.
@@ -4343,10 +4444,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 120 */
+/* 122 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var createBaseFor = __webpack_require__(121);
+	var createBaseFor = __webpack_require__(123);
 
 	/**
 	 * The base implementation of `baseForOwn` which iterates over `object`
@@ -4365,7 +4466,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 121 */
+/* 123 */
 /***/ (function(module, exports) {
 
 	/**
@@ -4396,10 +4497,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 122 */
+/* 124 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isArrayLike = __webpack_require__(78);
+	var isArrayLike = __webpack_require__(80);
 
 	/**
 	 * Creates a `baseEach` or `baseEachRight` function.
@@ -4434,10 +4535,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 123 */
+/* 125 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var identity = __webpack_require__(124);
+	var identity = __webpack_require__(126);
 
 	/**
 	 * Casts `value` to `identity` if it's not a function.
@@ -4454,7 +4555,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 124 */
+/* 126 */
 /***/ (function(module, exports) {
 
 	/**
@@ -4481,13 +4582,13 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 125 */
+/* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayFilter = __webpack_require__(87),
-	    baseFilter = __webpack_require__(126),
-	    baseIteratee = __webpack_require__(127),
-	    isArray = __webpack_require__(64);
+	var arrayFilter = __webpack_require__(89),
+	    baseFilter = __webpack_require__(128),
+	    baseIteratee = __webpack_require__(129),
+	    isArray = __webpack_require__(66);
 
 	/**
 	 * Iterates over elements of `collection`, returning an array of all elements
@@ -4535,10 +4636,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 126 */
+/* 128 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseEach = __webpack_require__(118);
+	var baseEach = __webpack_require__(120);
 
 	/**
 	 * The base implementation of `_.filter` without support for iteratee shorthands.
@@ -4562,14 +4663,14 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 127 */
+/* 129 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseMatches = __webpack_require__(128),
-	    baseMatchesProperty = __webpack_require__(145),
-	    identity = __webpack_require__(124),
-	    isArray = __webpack_require__(64),
-	    property = __webpack_require__(161);
+	var baseMatches = __webpack_require__(130),
+	    baseMatchesProperty = __webpack_require__(147),
+	    identity = __webpack_require__(126),
+	    isArray = __webpack_require__(66),
+	    property = __webpack_require__(163);
 
 	/**
 	 * The base implementation of `_.iteratee`.
@@ -4599,12 +4700,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 128 */
+/* 130 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseIsMatch = __webpack_require__(129),
-	    getMatchData = __webpack_require__(142),
-	    matchesStrictComparable = __webpack_require__(144);
+	var baseIsMatch = __webpack_require__(131),
+	    getMatchData = __webpack_require__(144),
+	    matchesStrictComparable = __webpack_require__(146);
 
 	/**
 	 * The base implementation of `_.matches` which doesn't clone `source`.
@@ -4627,11 +4728,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 129 */
+/* 131 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Stack = __webpack_require__(8),
-	    baseIsEqual = __webpack_require__(130);
+	var Stack = __webpack_require__(10),
+	    baseIsEqual = __webpack_require__(132);
 
 	/** Used to compose bitmasks for value comparisons. */
 	var COMPARE_PARTIAL_FLAG = 1,
@@ -4695,11 +4796,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 130 */
+/* 132 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseIsEqualDeep = __webpack_require__(131),
-	    isObjectLike = __webpack_require__(63);
+	var baseIsEqualDeep = __webpack_require__(133),
+	    isObjectLike = __webpack_require__(65);
 
 	/**
 	 * The base implementation of `_.isEqual` which supports partial comparisons
@@ -4729,17 +4830,17 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 131 */
+/* 133 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Stack = __webpack_require__(8),
-	    equalArrays = __webpack_require__(132),
-	    equalByTag = __webpack_require__(138),
-	    equalObjects = __webpack_require__(141),
-	    getTag = __webpack_require__(96),
-	    isArray = __webpack_require__(64),
-	    isBuffer = __webpack_require__(65),
-	    isTypedArray = __webpack_require__(69);
+	var Stack = __webpack_require__(10),
+	    equalArrays = __webpack_require__(134),
+	    equalByTag = __webpack_require__(140),
+	    equalObjects = __webpack_require__(143),
+	    getTag = __webpack_require__(98),
+	    isArray = __webpack_require__(66),
+	    isBuffer = __webpack_require__(67),
+	    isTypedArray = __webpack_require__(71);
 
 	/** Used to compose bitmasks for value comparisons. */
 	var COMPARE_PARTIAL_FLAG = 1;
@@ -4818,12 +4919,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 132 */
+/* 134 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var SetCache = __webpack_require__(133),
-	    arraySome = __webpack_require__(136),
-	    cacheHas = __webpack_require__(137);
+	var SetCache = __webpack_require__(135),
+	    arraySome = __webpack_require__(138),
+	    cacheHas = __webpack_require__(139);
 
 	/** Used to compose bitmasks for value comparisons. */
 	var COMPARE_PARTIAL_FLAG = 1,
@@ -4907,12 +5008,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 133 */
+/* 135 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var MapCache = __webpack_require__(37),
-	    setCacheAdd = __webpack_require__(134),
-	    setCacheHas = __webpack_require__(135);
+	var MapCache = __webpack_require__(39),
+	    setCacheAdd = __webpack_require__(136),
+	    setCacheHas = __webpack_require__(137);
 
 	/**
 	 *
@@ -4940,7 +5041,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 134 */
+/* 136 */
 /***/ (function(module, exports) {
 
 	/** Used to stand-in for `undefined` hash values. */
@@ -4965,7 +5066,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 135 */
+/* 137 */
 /***/ (function(module, exports) {
 
 	/**
@@ -4985,7 +5086,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 136 */
+/* 138 */
 /***/ (function(module, exports) {
 
 	/**
@@ -5014,7 +5115,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 137 */
+/* 139 */
 /***/ (function(module, exports) {
 
 	/**
@@ -5033,15 +5134,15 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 138 */
+/* 140 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Symbol = __webpack_require__(27),
-	    Uint8Array = __webpack_require__(104),
-	    eq = __webpack_require__(13),
-	    equalArrays = __webpack_require__(132),
-	    mapToArray = __webpack_require__(139),
-	    setToArray = __webpack_require__(140);
+	var Symbol = __webpack_require__(29),
+	    Uint8Array = __webpack_require__(106),
+	    eq = __webpack_require__(15),
+	    equalArrays = __webpack_require__(134),
+	    mapToArray = __webpack_require__(141),
+	    setToArray = __webpack_require__(142);
 
 	/** Used to compose bitmasks for value comparisons. */
 	var COMPARE_PARTIAL_FLAG = 1,
@@ -5151,7 +5252,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 139 */
+/* 141 */
 /***/ (function(module, exports) {
 
 	/**
@@ -5175,7 +5276,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 140 */
+/* 142 */
 /***/ (function(module, exports) {
 
 	/**
@@ -5199,10 +5300,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 141 */
+/* 143 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var getAllKeys = __webpack_require__(93);
+	var getAllKeys = __webpack_require__(95);
 
 	/** Used to compose bitmasks for value comparisons. */
 	var COMPARE_PARTIAL_FLAG = 1;
@@ -5294,11 +5395,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 142 */
+/* 144 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isStrictComparable = __webpack_require__(143),
-	    keys = __webpack_require__(58);
+	var isStrictComparable = __webpack_require__(145),
+	    keys = __webpack_require__(60);
 
 	/**
 	 * Gets the property names, values, and compare flags of `object`.
@@ -5324,10 +5425,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 143 */
+/* 145 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(32);
+	var isObject = __webpack_require__(34);
 
 	/**
 	 * Checks if `value` is suitable for strict equality comparisons, i.e. `===`.
@@ -5345,7 +5446,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 144 */
+/* 146 */
 /***/ (function(module, exports) {
 
 	/**
@@ -5371,16 +5472,16 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 145 */
+/* 147 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseIsEqual = __webpack_require__(130),
-	    get = __webpack_require__(146),
-	    hasIn = __webpack_require__(158),
-	    isKey = __webpack_require__(149),
-	    isStrictComparable = __webpack_require__(143),
-	    matchesStrictComparable = __webpack_require__(144),
-	    toKey = __webpack_require__(157);
+	var baseIsEqual = __webpack_require__(132),
+	    get = __webpack_require__(148),
+	    hasIn = __webpack_require__(160),
+	    isKey = __webpack_require__(151),
+	    isStrictComparable = __webpack_require__(145),
+	    matchesStrictComparable = __webpack_require__(146),
+	    toKey = __webpack_require__(159);
 
 	/** Used to compose bitmasks for value comparisons. */
 	var COMPARE_PARTIAL_FLAG = 1,
@@ -5410,10 +5511,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 146 */
+/* 148 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseGet = __webpack_require__(147);
+	var baseGet = __webpack_require__(149);
 
 	/**
 	 * Gets the value at `path` of `object`. If the resolved value is
@@ -5449,11 +5550,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 147 */
+/* 149 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var castPath = __webpack_require__(148),
-	    toKey = __webpack_require__(157);
+	var castPath = __webpack_require__(150),
+	    toKey = __webpack_require__(159);
 
 	/**
 	 * The base implementation of `_.get` without support for default values.
@@ -5479,13 +5580,13 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 148 */
+/* 150 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isArray = __webpack_require__(64),
-	    isKey = __webpack_require__(149),
-	    stringToPath = __webpack_require__(151),
-	    toString = __webpack_require__(154);
+	var isArray = __webpack_require__(66),
+	    isKey = __webpack_require__(151),
+	    stringToPath = __webpack_require__(153),
+	    toString = __webpack_require__(156);
 
 	/**
 	 * Casts `value` to a path array if it's not one.
@@ -5506,11 +5607,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 149 */
+/* 151 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isArray = __webpack_require__(64),
-	    isSymbol = __webpack_require__(150);
+	var isArray = __webpack_require__(66),
+	    isSymbol = __webpack_require__(152);
 
 	/** Used to match property names within property paths. */
 	var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/,
@@ -5541,11 +5642,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 150 */
+/* 152 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseGetTag = __webpack_require__(26),
-	    isObjectLike = __webpack_require__(63);
+	var baseGetTag = __webpack_require__(28),
+	    isObjectLike = __webpack_require__(65);
 
 	/** `Object#toString` result references. */
 	var symbolTag = '[object Symbol]';
@@ -5576,10 +5677,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 151 */
+/* 153 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var memoizeCapped = __webpack_require__(152);
+	var memoizeCapped = __webpack_require__(154);
 
 	/** Used to match property names within property paths. */
 	var rePropName = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g;
@@ -5609,10 +5710,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 152 */
+/* 154 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var memoize = __webpack_require__(153);
+	var memoize = __webpack_require__(155);
 
 	/** Used as the maximum memoize cache size. */
 	var MAX_MEMOIZE_SIZE = 500;
@@ -5641,10 +5742,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 153 */
+/* 155 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var MapCache = __webpack_require__(37);
+	var MapCache = __webpack_require__(39);
 
 	/** Error message constants. */
 	var FUNC_ERROR_TEXT = 'Expected a function';
@@ -5720,10 +5821,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 154 */
+/* 156 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseToString = __webpack_require__(155);
+	var baseToString = __webpack_require__(157);
 
 	/**
 	 * Converts `value` to a string. An empty string is returned for `null`
@@ -5754,13 +5855,13 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 155 */
+/* 157 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Symbol = __webpack_require__(27),
-	    arrayMap = __webpack_require__(156),
-	    isArray = __webpack_require__(64),
-	    isSymbol = __webpack_require__(150);
+	var Symbol = __webpack_require__(29),
+	    arrayMap = __webpack_require__(158),
+	    isArray = __webpack_require__(66),
+	    isSymbol = __webpack_require__(152);
 
 	/** Used as references for various `Number` constants. */
 	var INFINITY = 1 / 0;
@@ -5797,7 +5898,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 156 */
+/* 158 */
 /***/ (function(module, exports) {
 
 	/**
@@ -5824,10 +5925,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 157 */
+/* 159 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isSymbol = __webpack_require__(150);
+	var isSymbol = __webpack_require__(152);
 
 	/** Used as references for various `Number` constants. */
 	var INFINITY = 1 / 0;
@@ -5851,11 +5952,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 158 */
+/* 160 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseHasIn = __webpack_require__(159),
-	    hasPath = __webpack_require__(160);
+	var baseHasIn = __webpack_require__(161),
+	    hasPath = __webpack_require__(162);
 
 	/**
 	 * Checks if `path` is a direct or inherited property of `object`.
@@ -5891,7 +5992,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 159 */
+/* 161 */
 /***/ (function(module, exports) {
 
 	/**
@@ -5910,15 +6011,15 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 160 */
+/* 162 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var castPath = __webpack_require__(148),
-	    isArguments = __webpack_require__(61),
-	    isArray = __webpack_require__(64),
-	    isIndex = __webpack_require__(68),
-	    isLength = __webpack_require__(71),
-	    toKey = __webpack_require__(157);
+	var castPath = __webpack_require__(150),
+	    isArguments = __webpack_require__(63),
+	    isArray = __webpack_require__(66),
+	    isIndex = __webpack_require__(70),
+	    isLength = __webpack_require__(73),
+	    toKey = __webpack_require__(159);
 
 	/**
 	 * Checks if `path` exists on `object`.
@@ -5955,13 +6056,13 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 161 */
+/* 163 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseProperty = __webpack_require__(162),
-	    basePropertyDeep = __webpack_require__(163),
-	    isKey = __webpack_require__(149),
-	    toKey = __webpack_require__(157);
+	var baseProperty = __webpack_require__(164),
+	    basePropertyDeep = __webpack_require__(165),
+	    isKey = __webpack_require__(151),
+	    toKey = __webpack_require__(159);
 
 	/**
 	 * Creates a function that returns the value at `path` of a given object.
@@ -5993,7 +6094,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 162 */
+/* 164 */
 /***/ (function(module, exports) {
 
 	/**
@@ -6013,10 +6114,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 163 */
+/* 165 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseGet = __webpack_require__(147);
+	var baseGet = __webpack_require__(149);
 
 	/**
 	 * A specialized version of `baseProperty` which supports deep paths.
@@ -6035,11 +6136,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 164 */
+/* 166 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseHas = __webpack_require__(165),
-	    hasPath = __webpack_require__(160);
+	var baseHas = __webpack_require__(167),
+	    hasPath = __webpack_require__(162);
 
 	/**
 	 * Checks if `path` is a direct property of `object`.
@@ -6076,7 +6177,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 165 */
+/* 167 */
 /***/ (function(module, exports) {
 
 	/** Used for built-in method references. */
@@ -6101,17 +6202,17 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 166 */
+/* 168 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseKeys = __webpack_require__(74),
-	    getTag = __webpack_require__(96),
-	    isArguments = __webpack_require__(61),
-	    isArray = __webpack_require__(64),
-	    isArrayLike = __webpack_require__(78),
-	    isBuffer = __webpack_require__(65),
-	    isPrototype = __webpack_require__(75),
-	    isTypedArray = __webpack_require__(69);
+	var baseKeys = __webpack_require__(76),
+	    getTag = __webpack_require__(98),
+	    isArguments = __webpack_require__(63),
+	    isArray = __webpack_require__(66),
+	    isArrayLike = __webpack_require__(80),
+	    isBuffer = __webpack_require__(67),
+	    isPrototype = __webpack_require__(77),
+	    isTypedArray = __webpack_require__(71);
 
 	/** `Object#toString` result references. */
 	var mapTag = '[object Map]',
@@ -6184,7 +6285,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 167 */
+/* 169 */
 /***/ (function(module, exports) {
 
 	/**
@@ -6212,13 +6313,13 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 168 */
+/* 170 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayMap = __webpack_require__(156),
-	    baseIteratee = __webpack_require__(127),
-	    baseMap = __webpack_require__(169),
-	    isArray = __webpack_require__(64);
+	var arrayMap = __webpack_require__(158),
+	    baseIteratee = __webpack_require__(129),
+	    baseMap = __webpack_require__(171),
+	    isArray = __webpack_require__(66);
 
 	/**
 	 * Creates an array of values by running each element in `collection` thru
@@ -6271,11 +6372,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 169 */
+/* 171 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseEach = __webpack_require__(118),
-	    isArrayLike = __webpack_require__(78);
+	var baseEach = __webpack_require__(120),
+	    isArrayLike = __webpack_require__(80);
 
 	/**
 	 * The base implementation of `_.map` without support for iteratee shorthands.
@@ -6299,14 +6400,14 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 170 */
+/* 172 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayReduce = __webpack_require__(171),
-	    baseEach = __webpack_require__(118),
-	    baseIteratee = __webpack_require__(127),
-	    baseReduce = __webpack_require__(172),
-	    isArray = __webpack_require__(64);
+	var arrayReduce = __webpack_require__(173),
+	    baseEach = __webpack_require__(120),
+	    baseIteratee = __webpack_require__(129),
+	    baseReduce = __webpack_require__(174),
+	    isArray = __webpack_require__(66);
 
 	/**
 	 * Reduces `collection` to a value which is the accumulated result of running
@@ -6356,7 +6457,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 171 */
+/* 173 */
 /***/ (function(module, exports) {
 
 	/**
@@ -6388,7 +6489,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 172 */
+/* 174 */
 /***/ (function(module, exports) {
 
 	/**
@@ -6417,14 +6518,14 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 173 */
+/* 175 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseKeys = __webpack_require__(74),
-	    getTag = __webpack_require__(96),
-	    isArrayLike = __webpack_require__(78),
-	    isString = __webpack_require__(174),
-	    stringSize = __webpack_require__(175);
+	var baseKeys = __webpack_require__(76),
+	    getTag = __webpack_require__(98),
+	    isArrayLike = __webpack_require__(80),
+	    isString = __webpack_require__(176),
+	    stringSize = __webpack_require__(177);
 
 	/** `Object#toString` result references. */
 	var mapTag = '[object Map]',
@@ -6469,12 +6570,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 174 */
+/* 176 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseGetTag = __webpack_require__(26),
-	    isArray = __webpack_require__(64),
-	    isObjectLike = __webpack_require__(63);
+	var baseGetTag = __webpack_require__(28),
+	    isArray = __webpack_require__(66),
+	    isObjectLike = __webpack_require__(65);
 
 	/** `Object#toString` result references. */
 	var stringTag = '[object String]';
@@ -6505,12 +6606,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 175 */
+/* 177 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var asciiSize = __webpack_require__(176),
-	    hasUnicode = __webpack_require__(177),
-	    unicodeSize = __webpack_require__(178);
+	var asciiSize = __webpack_require__(178),
+	    hasUnicode = __webpack_require__(179),
+	    unicodeSize = __webpack_require__(180);
 
 	/**
 	 * Gets the number of symbols in `string`.
@@ -6529,10 +6630,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 176 */
+/* 178 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseProperty = __webpack_require__(162);
+	var baseProperty = __webpack_require__(164);
 
 	/**
 	 * Gets the size of an ASCII `string`.
@@ -6547,7 +6648,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 177 */
+/* 179 */
 /***/ (function(module, exports) {
 
 	/** Used to compose unicode character classes. */
@@ -6579,7 +6680,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 178 */
+/* 180 */
 /***/ (function(module, exports) {
 
 	/** Used to compose unicode character classes. */
@@ -6629,19 +6730,19 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 179 */
+/* 181 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayEach = __webpack_require__(52),
-	    baseCreate = __webpack_require__(110),
-	    baseForOwn = __webpack_require__(119),
-	    baseIteratee = __webpack_require__(127),
-	    getPrototype = __webpack_require__(92),
-	    isArray = __webpack_require__(64),
-	    isBuffer = __webpack_require__(65),
-	    isFunction = __webpack_require__(25),
-	    isObject = __webpack_require__(32),
-	    isTypedArray = __webpack_require__(69);
+	var arrayEach = __webpack_require__(54),
+	    baseCreate = __webpack_require__(112),
+	    baseForOwn = __webpack_require__(121),
+	    baseIteratee = __webpack_require__(129),
+	    getPrototype = __webpack_require__(94),
+	    isArray = __webpack_require__(66),
+	    isBuffer = __webpack_require__(67),
+	    isFunction = __webpack_require__(27),
+	    isObject = __webpack_require__(34),
+	    isTypedArray = __webpack_require__(71);
 
 	/**
 	 * An alternative to `_.reduce`; this method transforms `object` to a new
@@ -6700,13 +6801,13 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 180 */
+/* 182 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseFlatten = __webpack_require__(181),
-	    baseRest = __webpack_require__(183),
-	    baseUniq = __webpack_require__(189),
-	    isArrayLikeObject = __webpack_require__(198);
+	var baseFlatten = __webpack_require__(183),
+	    baseRest = __webpack_require__(185),
+	    baseUniq = __webpack_require__(191),
+	    isArrayLikeObject = __webpack_require__(200);
 
 	/**
 	 * Creates an array of unique values, in order, from all given arrays using
@@ -6732,11 +6833,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 181 */
+/* 183 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayPush = __webpack_require__(91),
-	    isFlattenable = __webpack_require__(182);
+	var arrayPush = __webpack_require__(93),
+	    isFlattenable = __webpack_require__(184);
 
 	/**
 	 * The base implementation of `_.flatten` with support for restricting flattening.
@@ -6776,12 +6877,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 182 */
+/* 184 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Symbol = __webpack_require__(27),
-	    isArguments = __webpack_require__(61),
-	    isArray = __webpack_require__(64);
+	var Symbol = __webpack_require__(29),
+	    isArguments = __webpack_require__(63),
+	    isArray = __webpack_require__(66);
 
 	/** Built-in value references. */
 	var spreadableSymbol = Symbol ? Symbol.isConcatSpreadable : undefined;
@@ -6802,12 +6903,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 183 */
+/* 185 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var identity = __webpack_require__(124),
-	    overRest = __webpack_require__(184),
-	    setToString = __webpack_require__(186);
+	var identity = __webpack_require__(126),
+	    overRest = __webpack_require__(186),
+	    setToString = __webpack_require__(188);
 
 	/**
 	 * The base implementation of `_.rest` which doesn't validate or coerce arguments.
@@ -6825,10 +6926,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 184 */
+/* 186 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var apply = __webpack_require__(185);
+	var apply = __webpack_require__(187);
 
 	/* Built-in method references for those with the same name as other `lodash` methods. */
 	var nativeMax = Math.max;
@@ -6867,7 +6968,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 185 */
+/* 187 */
 /***/ (function(module, exports) {
 
 	/**
@@ -6894,11 +6995,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 186 */
+/* 188 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseSetToString = __webpack_require__(187),
-	    shortOut = __webpack_require__(188);
+	var baseSetToString = __webpack_require__(189),
+	    shortOut = __webpack_require__(190);
 
 	/**
 	 * Sets the `toString` method of `func` to return `string`.
@@ -6914,12 +7015,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 187 */
+/* 189 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var constant = __webpack_require__(115),
-	    defineProperty = __webpack_require__(55),
-	    identity = __webpack_require__(124);
+	var constant = __webpack_require__(117),
+	    defineProperty = __webpack_require__(57),
+	    identity = __webpack_require__(126);
 
 	/**
 	 * The base implementation of `setToString` without support for hot loop shorting.
@@ -6942,7 +7043,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 188 */
+/* 190 */
 /***/ (function(module, exports) {
 
 	/** Used to detect hot functions by number of calls within a span of milliseconds. */
@@ -6985,15 +7086,15 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 189 */
+/* 191 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var SetCache = __webpack_require__(133),
-	    arrayIncludes = __webpack_require__(190),
-	    arrayIncludesWith = __webpack_require__(195),
-	    cacheHas = __webpack_require__(137),
-	    createSet = __webpack_require__(196),
-	    setToArray = __webpack_require__(140);
+	var SetCache = __webpack_require__(135),
+	    arrayIncludes = __webpack_require__(192),
+	    arrayIncludesWith = __webpack_require__(197),
+	    cacheHas = __webpack_require__(139),
+	    createSet = __webpack_require__(198),
+	    setToArray = __webpack_require__(142);
 
 	/** Used as the size to enable large array optimizations. */
 	var LARGE_ARRAY_SIZE = 200;
@@ -7063,10 +7164,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 190 */
+/* 192 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseIndexOf = __webpack_require__(191);
+	var baseIndexOf = __webpack_require__(193);
 
 	/**
 	 * A specialized version of `_.includes` for arrays without support for
@@ -7086,12 +7187,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 191 */
+/* 193 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseFindIndex = __webpack_require__(192),
-	    baseIsNaN = __webpack_require__(193),
-	    strictIndexOf = __webpack_require__(194);
+	var baseFindIndex = __webpack_require__(194),
+	    baseIsNaN = __webpack_require__(195),
+	    strictIndexOf = __webpack_require__(196);
 
 	/**
 	 * The base implementation of `_.indexOf` without `fromIndex` bounds checks.
@@ -7112,7 +7213,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 192 */
+/* 194 */
 /***/ (function(module, exports) {
 
 	/**
@@ -7142,7 +7243,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 193 */
+/* 195 */
 /***/ (function(module, exports) {
 
 	/**
@@ -7160,7 +7261,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 194 */
+/* 196 */
 /***/ (function(module, exports) {
 
 	/**
@@ -7189,7 +7290,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 195 */
+/* 197 */
 /***/ (function(module, exports) {
 
 	/**
@@ -7217,12 +7318,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 196 */
+/* 198 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Set = __webpack_require__(99),
-	    noop = __webpack_require__(197),
-	    setToArray = __webpack_require__(140);
+	var Set = __webpack_require__(101),
+	    noop = __webpack_require__(199),
+	    setToArray = __webpack_require__(142);
 
 	/** Used as references for various `Number` constants. */
 	var INFINITY = 1 / 0;
@@ -7242,7 +7343,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 197 */
+/* 199 */
 /***/ (function(module, exports) {
 
 	/**
@@ -7265,11 +7366,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 198 */
+/* 200 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var isArrayLike = __webpack_require__(78),
-	    isObjectLike = __webpack_require__(63);
+	var isArrayLike = __webpack_require__(80),
+	    isObjectLike = __webpack_require__(65);
 
 	/**
 	 * This method is like `_.isArrayLike` except that it also checks if `value`
@@ -7304,11 +7405,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 199 */
+/* 201 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var baseValues = __webpack_require__(200),
-	    keys = __webpack_require__(58);
+	var baseValues = __webpack_require__(202),
+	    keys = __webpack_require__(60);
 
 	/**
 	 * Creates an array of the own enumerable string keyed property values of `object`.
@@ -7344,10 +7445,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 200 */
+/* 202 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var arrayMap = __webpack_require__(156);
+	var arrayMap = __webpack_require__(158);
 
 	/**
 	 * The base implementation of `_.values` and `_.valuesIn` which creates an
@@ -7369,18 +7470,18 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 201 */
+/* 203 */
 /***/ (function(module, exports) {
 
 	module.exports = '2.1.8';
 
 
 /***/ }),
-/* 202 */
+/* 204 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
-	var Graph = __webpack_require__(4);
+	var _ = __webpack_require__(7);
+	var Graph = __webpack_require__(6);
 
 	module.exports = {
 	  write: write,
@@ -7448,29 +7549,29 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 203 */
+/* 205 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	module.exports = {
-	  components: __webpack_require__(204),
-	  dijkstra: __webpack_require__(205),
-	  dijkstraAll: __webpack_require__(207),
-	  findCycles: __webpack_require__(208),
-	  floydWarshall: __webpack_require__(210),
-	  isAcyclic: __webpack_require__(211),
-	  postorder: __webpack_require__(213),
-	  preorder: __webpack_require__(215),
-	  prim: __webpack_require__(216),
-	  tarjan: __webpack_require__(209),
-	  topsort: __webpack_require__(212)
+	  components: __webpack_require__(206),
+	  dijkstra: __webpack_require__(207),
+	  dijkstraAll: __webpack_require__(209),
+	  findCycles: __webpack_require__(210),
+	  floydWarshall: __webpack_require__(212),
+	  isAcyclic: __webpack_require__(213),
+	  postorder: __webpack_require__(215),
+	  preorder: __webpack_require__(217),
+	  prim: __webpack_require__(218),
+	  tarjan: __webpack_require__(211),
+	  topsort: __webpack_require__(214)
 	};
 
 
 /***/ }),
-/* 204 */
+/* 206 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
+	var _ = __webpack_require__(7);
 
 	module.exports = components;
 
@@ -7500,11 +7601,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 205 */
+/* 207 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
-	var PriorityQueue = __webpack_require__(206);
+	var _ = __webpack_require__(7);
+	var PriorityQueue = __webpack_require__(208);
 
 	module.exports = dijkstra;
 
@@ -7560,10 +7661,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 206 */
+/* 208 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
+	var _ = __webpack_require__(7);
 
 	module.exports = PriorityQueue;
 
@@ -7718,11 +7819,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 207 */
+/* 209 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var dijkstra = __webpack_require__(205);
-	var _ = __webpack_require__(5);
+	var dijkstra = __webpack_require__(207);
+	var _ = __webpack_require__(7);
 
 	module.exports = dijkstraAll;
 
@@ -7734,11 +7835,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 208 */
+/* 210 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
-	var tarjan = __webpack_require__(209);
+	var _ = __webpack_require__(7);
+	var tarjan = __webpack_require__(211);
 
 	module.exports = findCycles;
 
@@ -7750,10 +7851,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 209 */
+/* 211 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
+	var _ = __webpack_require__(7);
 
 	module.exports = tarjan;
 
@@ -7803,10 +7904,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 210 */
+/* 212 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
+	var _ = __webpack_require__(7);
 
 	module.exports = floydWarshall;
 
@@ -7859,10 +7960,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 211 */
+/* 213 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var topsort = __webpack_require__(212);
+	var topsort = __webpack_require__(214);
 
 	module.exports = isAcyclic;
 
@@ -7880,10 +7981,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 212 */
+/* 214 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
+	var _ = __webpack_require__(7);
 
 	module.exports = topsort;
 	topsort.CycleException = CycleException;
@@ -7920,10 +8021,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	CycleException.prototype = new Error(); // must be an instance of Error to pass testing
 
 /***/ }),
-/* 213 */
+/* 215 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var dfs = __webpack_require__(214);
+	var dfs = __webpack_require__(216);
 
 	module.exports = postorder;
 
@@ -7933,10 +8034,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 214 */
+/* 216 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
+	var _ = __webpack_require__(7);
 
 	module.exports = dfs;
 
@@ -7981,10 +8082,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 215 */
+/* 217 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var dfs = __webpack_require__(214);
+	var dfs = __webpack_require__(216);
 
 	module.exports = preorder;
 
@@ -7994,12 +8095,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 216 */
+/* 218 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(5);
-	var Graph = __webpack_require__(4);
-	var PriorityQueue = __webpack_require__(206);
+	var _ = __webpack_require__(7);
+	var Graph = __webpack_require__(6);
+	var PriorityQueue = __webpack_require__(208);
 
 	module.exports = prim;
 
@@ -8052,7 +8153,4822 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 217 */
+/* 219 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+	var acyclic = __webpack_require__(265);
+	var normalize = __webpack_require__(268);
+	var rank = __webpack_require__(270);
+	var normalizeRanks = __webpack_require__(269).normalizeRanks;
+	var parentDummyChains = __webpack_require__(274);
+	var removeEmptyRanks = __webpack_require__(269).removeEmptyRanks;
+	var nestingGraph = __webpack_require__(275);
+	var addBorderSegments = __webpack_require__(276);
+	var coordinateSystem = __webpack_require__(277);
+	var order = __webpack_require__(278);
+	var position = __webpack_require__(287);
+	var util = __webpack_require__(269);
+	var Graph = __webpack_require__(3).Graph;
+
+	module.exports = layout;
+
+	function layout(g, opts) {
+	  var time = opts && opts.debugTiming ? util.time : util.notime;
+	  time("layout", function() {
+	    var layoutGraph = 
+	      time("  buildLayoutGraph", function() { return buildLayoutGraph(g); });
+	    time("  runLayout",        function() { runLayout(layoutGraph, time); });
+	    time("  updateInputGraph", function() { updateInputGraph(g, layoutGraph); });
+	  });
+	}
+
+	function runLayout(g, time) {
+	  time("    makeSpaceForEdgeLabels", function() { makeSpaceForEdgeLabels(g); });
+	  time("    removeSelfEdges",        function() { removeSelfEdges(g); });
+	  time("    acyclic",                function() { acyclic.run(g); });
+	  time("    nestingGraph.run",       function() { nestingGraph.run(g); });
+	  time("    rank",                   function() { rank(util.asNonCompoundGraph(g)); });
+	  time("    injectEdgeLabelProxies", function() { injectEdgeLabelProxies(g); });
+	  time("    removeEmptyRanks",       function() { removeEmptyRanks(g); });
+	  time("    nestingGraph.cleanup",   function() { nestingGraph.cleanup(g); });
+	  time("    normalizeRanks",         function() { normalizeRanks(g); });
+	  time("    assignRankMinMax",       function() { assignRankMinMax(g); });
+	  time("    removeEdgeLabelProxies", function() { removeEdgeLabelProxies(g); });
+	  time("    normalize.run",          function() { normalize.run(g); });
+	  time("    parentDummyChains",      function() { parentDummyChains(g); });
+	  time("    addBorderSegments",      function() { addBorderSegments(g); });
+	  time("    order",                  function() { order(g); });
+	  time("    insertSelfEdges",        function() { insertSelfEdges(g); });
+	  time("    adjustCoordinateSystem", function() { coordinateSystem.adjust(g); });
+	  time("    position",               function() { position(g); });
+	  time("    positionSelfEdges",      function() { positionSelfEdges(g); });
+	  time("    removeBorderNodes",      function() { removeBorderNodes(g); });
+	  time("    normalize.undo",         function() { normalize.undo(g); });
+	  time("    fixupEdgeLabelCoords",   function() { fixupEdgeLabelCoords(g); });
+	  time("    undoCoordinateSystem",   function() { coordinateSystem.undo(g); });
+	  time("    translateGraph",         function() { translateGraph(g); });
+	  time("    assignNodeIntersects",   function() { assignNodeIntersects(g); });
+	  time("    reversePoints",          function() { reversePointsForReversedEdges(g); });
+	  time("    acyclic.undo",           function() { acyclic.undo(g); });
+	}
+
+	/*
+	 * Copies final layout information from the layout graph back to the input
+	 * graph. This process only copies whitelisted attributes from the layout graph
+	 * to the input graph, so it serves as a good place to determine what
+	 * attributes can influence layout.
+	 */
+	function updateInputGraph(inputGraph, layoutGraph) {
+	  _.forEach(inputGraph.nodes(), function(v) {
+	    var inputLabel = inputGraph.node(v);
+	    var layoutLabel = layoutGraph.node(v);
+
+	    if (inputLabel) {
+	      inputLabel.x = layoutLabel.x;
+	      inputLabel.y = layoutLabel.y;
+
+	      if (layoutGraph.children(v).length) {
+	        inputLabel.width = layoutLabel.width;
+	        inputLabel.height = layoutLabel.height;
+	      }
+	    }
+	  });
+
+	  _.forEach(inputGraph.edges(), function(e) {
+	    var inputLabel = inputGraph.edge(e);
+	    var layoutLabel = layoutGraph.edge(e);
+
+	    inputLabel.points = layoutLabel.points;
+	    if (_.has(layoutLabel, "x")) {
+	      inputLabel.x = layoutLabel.x;
+	      inputLabel.y = layoutLabel.y;
+	    }
+	  });
+
+	  inputGraph.graph().width = layoutGraph.graph().width;
+	  inputGraph.graph().height = layoutGraph.graph().height;
+	}
+
+	var graphNumAttrs = ["nodesep", "edgesep", "ranksep", "marginx", "marginy"];
+	var graphDefaults = { ranksep: 50, edgesep: 20, nodesep: 50, rankdir: "tb" };
+	var graphAttrs = ["acyclicer", "ranker", "rankdir", "align"];
+	var nodeNumAttrs = ["width", "height"];
+	var nodeDefaults = { width: 0, height: 0 };
+	var edgeNumAttrs = ["minlen", "weight", "width", "height", "labeloffset"];
+	var edgeDefaults = {
+	  minlen: 1, weight: 1, width: 0, height: 0,
+	  labeloffset: 10, labelpos: "r"
+	};
+	var edgeAttrs = ["labelpos"];
+
+	/*
+	 * Constructs a new graph from the input graph, which can be used for layout.
+	 * This process copies only whitelisted attributes from the input graph to the
+	 * layout graph. Thus this function serves as a good place to determine what
+	 * attributes can influence layout.
+	 */
+	function buildLayoutGraph(inputGraph) {
+	  var g = new Graph({ multigraph: true, compound: true });
+	  var graph = canonicalize(inputGraph.graph());
+
+	  g.setGraph(_.merge({},
+	    graphDefaults,
+	    selectNumberAttrs(graph, graphNumAttrs),
+	    _.pick(graph, graphAttrs)));
+
+	  _.forEach(inputGraph.nodes(), function(v) {
+	    var node = canonicalize(inputGraph.node(v));
+	    g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs), nodeDefaults));
+	    g.setParent(v, inputGraph.parent(v));
+	  });
+
+	  _.forEach(inputGraph.edges(), function(e) {
+	    var edge = canonicalize(inputGraph.edge(e));
+	    g.setEdge(e, _.merge({},
+	      edgeDefaults,
+	      selectNumberAttrs(edge, edgeNumAttrs),
+	      _.pick(edge, edgeAttrs)));
+	  });
+
+	  return g;
+	}
+
+	/*
+	 * This idea comes from the Gansner paper: to account for edge labels in our
+	 * layout we split each rank in half by doubling minlen and halving ranksep.
+	 * Then we can place labels at these mid-points between nodes.
+	 *
+	 * We also add some minimal padding to the width to push the label for the edge
+	 * away from the edge itself a bit.
+	 */
+	function makeSpaceForEdgeLabels(g) {
+	  var graph = g.graph();
+	  graph.ranksep /= 2;
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    edge.minlen *= 2;
+	    if (edge.labelpos.toLowerCase() !== "c") {
+	      if (graph.rankdir === "TB" || graph.rankdir === "BT") {
+	        edge.width += edge.labeloffset;
+	      } else {
+	        edge.height += edge.labeloffset;
+	      }
+	    }
+	  });
+	}
+
+	/*
+	 * Creates temporary dummy nodes that capture the rank in which each edge's
+	 * label is going to, if it has one of non-zero width and height. We do this
+	 * so that we can safely remove empty ranks while preserving balance for the
+	 * label's position.
+	 */
+	function injectEdgeLabelProxies(g) {
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    if (edge.width && edge.height) {
+	      var v = g.node(e.v);
+	      var w = g.node(e.w);
+	      var label = { rank: (w.rank - v.rank) / 2 + v.rank, e: e };
+	      util.addDummyNode(g, "edge-proxy", label, "_ep");
+	    }
+	  });
+	}
+
+	function assignRankMinMax(g) {
+	  var maxRank = 0;
+	  _.forEach(g.nodes(), function(v) {
+	    var node = g.node(v);
+	    if (node.borderTop) {
+	      node.minRank = g.node(node.borderTop).rank;
+	      node.maxRank = g.node(node.borderBottom).rank;
+	      maxRank = _.max(maxRank, node.maxRank);
+	    }
+	  });
+	  g.graph().maxRank = maxRank;
+	}
+
+	function removeEdgeLabelProxies(g) {
+	  _.forEach(g.nodes(), function(v) {
+	    var node = g.node(v);
+	    if (node.dummy === "edge-proxy") {
+	      g.edge(node.e).labelRank = node.rank;
+	      g.removeNode(v);
+	    }
+	  });
+	}
+
+	function translateGraph(g) {
+	  var minX = Number.POSITIVE_INFINITY;
+	  var maxX = 0;
+	  var minY = Number.POSITIVE_INFINITY;
+	  var maxY = 0;
+	  var graphLabel = g.graph();
+	  var marginX = graphLabel.marginx || 0;
+	  var marginY = graphLabel.marginy || 0;
+
+	  function getExtremes(attrs) {
+	    var x = attrs.x;
+	    var y = attrs.y;
+	    var w = attrs.width;
+	    var h = attrs.height;
+	    minX = Math.min(minX, x - w / 2);
+	    maxX = Math.max(maxX, x + w / 2);
+	    minY = Math.min(minY, y - h / 2);
+	    maxY = Math.max(maxY, y + h / 2);
+	  }
+
+	  _.forEach(g.nodes(), function(v) { getExtremes(g.node(v)); });
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    if (_.has(edge, "x")) {
+	      getExtremes(edge);
+	    }
+	  });
+
+	  minX -= marginX;
+	  minY -= marginY;
+
+	  _.forEach(g.nodes(), function(v) {
+	    var node = g.node(v);
+	    node.x -= minX;
+	    node.y -= minY;
+	  });
+
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    _.forEach(edge.points, function(p) {
+	      p.x -= minX;
+	      p.y -= minY;
+	    });
+	    if (_.has(edge, "x")) { edge.x -= minX; }
+	    if (_.has(edge, "y")) { edge.y -= minY; }
+	  });
+
+	  graphLabel.width = maxX - minX + marginX;
+	  graphLabel.height = maxY - minY + marginY;
+	}
+
+	function assignNodeIntersects(g) {
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    var nodeV = g.node(e.v);
+	    var nodeW = g.node(e.w);
+	    var p1, p2;
+	    if (!edge.points) {
+	      edge.points = [];
+	      p1 = nodeW;
+	      p2 = nodeV;
+	    } else {
+	      p1 = edge.points[0];
+	      p2 = edge.points[edge.points.length - 1];
+	    }
+	    edge.points.unshift(util.intersectRect(nodeV, p1));
+	    edge.points.push(util.intersectRect(nodeW, p2));
+	  });
+	}
+
+	function fixupEdgeLabelCoords(g) {
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    if (_.has(edge, "x")) {
+	      if (edge.labelpos === "l" || edge.labelpos === "r") {
+	        edge.width -= edge.labeloffset;
+	      }
+	      switch (edge.labelpos) {
+	      case "l": edge.x -= edge.width / 2 + edge.labeloffset; break;
+	      case "r": edge.x += edge.width / 2 + edge.labeloffset; break;
+	      }
+	    }
+	  });
+	}
+
+	function reversePointsForReversedEdges(g) {
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    if (edge.reversed) {
+	      edge.points.reverse();
+	    }
+	  });
+	}
+
+	function removeBorderNodes(g) {
+	  _.forEach(g.nodes(), function(v) {
+	    if (g.children(v).length) {
+	      var node = g.node(v);
+	      var t = g.node(node.borderTop);
+	      var b = g.node(node.borderBottom);
+	      var l = g.node(_.last(node.borderLeft));
+	      var r = g.node(_.last(node.borderRight));
+
+	      node.width = Math.abs(r.x - l.x);
+	      node.height = Math.abs(b.y - t.y);
+	      node.x = l.x + node.width / 2;
+	      node.y = t.y + node.height / 2;
+	    }
+	  });
+
+	  _.forEach(g.nodes(), function(v) {
+	    if (g.node(v).dummy === "border") {
+	      g.removeNode(v);
+	    }
+	  });
+	}
+
+	function removeSelfEdges(g) {
+	  _.forEach(g.edges(), function(e) {
+	    if (e.v === e.w) {
+	      var node = g.node(e.v);
+	      if (!node.selfEdges) {
+	        node.selfEdges = [];
+	      }
+	      node.selfEdges.push({ e: e, label: g.edge(e) });
+	      g.removeEdge(e);
+	    }
+	  });
+	}
+
+	function insertSelfEdges(g) {
+	  var layers = util.buildLayerMatrix(g);
+	  _.forEach(layers, function(layer) {
+	    var orderShift = 0;
+	    _.forEach(layer, function(v, i) {
+	      var node = g.node(v);
+	      node.order = i + orderShift;
+	      _.forEach(node.selfEdges, function(selfEdge) {
+	        util.addDummyNode(g, "selfedge", {
+	          width: selfEdge.label.width,
+	          height: selfEdge.label.height,
+	          rank: node.rank,
+	          order: i + (++orderShift),
+	          e: selfEdge.e,
+	          label: selfEdge.label
+	        }, "_se");
+	      });
+	      delete node.selfEdges;
+	    });
+	  });
+	}
+
+	function positionSelfEdges(g) {
+	  _.forEach(g.nodes(), function(v) {
+	    var node = g.node(v);
+	    if (node.dummy === "selfedge") {
+	      var selfNode = g.node(node.e.v);
+	      var x = selfNode.x + selfNode.width / 2;
+	      var y = selfNode.y;
+	      var dx = node.x - x;
+	      var dy = selfNode.height / 2;
+	      g.setEdge(node.e, node.label);
+	      g.removeNode(v);
+	      node.label.points = [
+	        { x: x + 2 * dx / 3, y: y - dy },
+	        { x: x + 5 * dx / 6, y: y - dy },
+	        { x: x +     dx    , y: y },
+	        { x: x + 5 * dx / 6, y: y + dy },
+	        { x: x + 2 * dx / 3, y: y + dy }
+	      ];
+	      node.label.x = node.x;
+	      node.label.y = node.y;
+	    }
+	  });
+	}
+
+	function selectNumberAttrs(obj, attrs) {
+	  return _.mapValues(_.pick(obj, attrs), Number);
+	}
+
+	function canonicalize(attrs) {
+	  var newAttrs = {};
+	  _.forEach(attrs, function(v, k) {
+	    newAttrs[k.toLowerCase()] = v;
+	  });
+	  return newAttrs;
+	}
+
+
+/***/ }),
+/* 220 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	/* global window */
+
+	var lodash;
+
+	if (true) {
+	  try {
+	    lodash = {
+	      cloneDeep: __webpack_require__(221),
+	      constant: __webpack_require__(117),
+	      defaults: __webpack_require__(222),
+	      each: __webpack_require__(118),
+	      filter: __webpack_require__(127),
+	      find: __webpack_require__(224),
+	      flatten: __webpack_require__(230),
+	      forEach: __webpack_require__(119),
+	      forIn: __webpack_require__(231),
+	      has:  __webpack_require__(166),
+	      isUndefined: __webpack_require__(169),
+	      last: __webpack_require__(232),
+	      map: __webpack_require__(170),
+	      mapValues: __webpack_require__(233),
+	      max: __webpack_require__(234),
+	      merge: __webpack_require__(237),
+	      min: __webpack_require__(245),
+	      minBy: __webpack_require__(247),
+	      now: __webpack_require__(248),
+	      pick: __webpack_require__(249),
+	      range: __webpack_require__(254),
+	      reduce: __webpack_require__(172),
+	      sortBy: __webpack_require__(257),
+	      uniqueId: __webpack_require__(262),
+	      values: __webpack_require__(201),
+	      zipObject: __webpack_require__(263),
+	    };
+	  } catch (e) {
+	    // continue regardless of error
+	  }
+	}
+
+	if (!lodash) {
+	  lodash = window._;
+	}
+
+	module.exports = lodash;
+
+
+/***/ }),
+/* 221 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseClone = __webpack_require__(9);
+
+	/** Used to compose bitmasks for cloning. */
+	var CLONE_DEEP_FLAG = 1,
+	    CLONE_SYMBOLS_FLAG = 4;
+
+	/**
+	 * This method is like `_.clone` except that it recursively clones `value`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 1.0.0
+	 * @category Lang
+	 * @param {*} value The value to recursively clone.
+	 * @returns {*} Returns the deep cloned value.
+	 * @see _.clone
+	 * @example
+	 *
+	 * var objects = [{ 'a': 1 }, { 'b': 2 }];
+	 *
+	 * var deep = _.cloneDeep(objects);
+	 * console.log(deep[0] === objects[0]);
+	 * // => false
+	 */
+	function cloneDeep(value) {
+	  return baseClone(value, CLONE_DEEP_FLAG | CLONE_SYMBOLS_FLAG);
+	}
+
+	module.exports = cloneDeep;
+
+
+/***/ }),
+/* 222 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseRest = __webpack_require__(185),
+	    eq = __webpack_require__(15),
+	    isIterateeCall = __webpack_require__(223),
+	    keysIn = __webpack_require__(82);
+
+	/** Used for built-in method references. */
+	var objectProto = Object.prototype;
+
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+
+	/**
+	 * Assigns own and inherited enumerable string keyed properties of source
+	 * objects to the destination object for all destination properties that
+	 * resolve to `undefined`. Source objects are applied from left to right.
+	 * Once a property is set, additional values of the same property are ignored.
+	 *
+	 * **Note:** This method mutates `object`.
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The destination object.
+	 * @param {...Object} [sources] The source objects.
+	 * @returns {Object} Returns `object`.
+	 * @see _.defaultsDeep
+	 * @example
+	 *
+	 * _.defaults({ 'a': 1 }, { 'b': 2 }, { 'a': 3 });
+	 * // => { 'a': 1, 'b': 2 }
+	 */
+	var defaults = baseRest(function(object, sources) {
+	  object = Object(object);
+
+	  var index = -1;
+	  var length = sources.length;
+	  var guard = length > 2 ? sources[2] : undefined;
+
+	  if (guard && isIterateeCall(sources[0], sources[1], guard)) {
+	    length = 1;
+	  }
+
+	  while (++index < length) {
+	    var source = sources[index];
+	    var props = keysIn(source);
+	    var propsIndex = -1;
+	    var propsLength = props.length;
+
+	    while (++propsIndex < propsLength) {
+	      var key = props[propsIndex];
+	      var value = object[key];
+
+	      if (value === undefined ||
+	          (eq(value, objectProto[key]) && !hasOwnProperty.call(object, key))) {
+	        object[key] = source[key];
+	      }
+	    }
+	  }
+
+	  return object;
+	});
+
+	module.exports = defaults;
+
+
+/***/ }),
+/* 223 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var eq = __webpack_require__(15),
+	    isArrayLike = __webpack_require__(80),
+	    isIndex = __webpack_require__(70),
+	    isObject = __webpack_require__(34);
+
+	/**
+	 * Checks if the given arguments are from an iteratee call.
+	 *
+	 * @private
+	 * @param {*} value The potential iteratee value argument.
+	 * @param {*} index The potential iteratee index or key argument.
+	 * @param {*} object The potential iteratee object argument.
+	 * @returns {boolean} Returns `true` if the arguments are from an iteratee call,
+	 *  else `false`.
+	 */
+	function isIterateeCall(value, index, object) {
+	  if (!isObject(object)) {
+	    return false;
+	  }
+	  var type = typeof index;
+	  if (type == 'number'
+	        ? (isArrayLike(object) && isIndex(index, object.length))
+	        : (type == 'string' && index in object)
+	      ) {
+	    return eq(object[index], value);
+	  }
+	  return false;
+	}
+
+	module.exports = isIterateeCall;
+
+
+/***/ }),
+/* 224 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var createFind = __webpack_require__(225),
+	    findIndex = __webpack_require__(226);
+
+	/**
+	 * Iterates over elements of `collection`, returning the first element
+	 * `predicate` returns truthy for. The predicate is invoked with three
+	 * arguments: (value, index|key, collection).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to inspect.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @param {number} [fromIndex=0] The index to search from.
+	 * @returns {*} Returns the matched element, else `undefined`.
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'barney',  'age': 36, 'active': true },
+	 *   { 'user': 'fred',    'age': 40, 'active': false },
+	 *   { 'user': 'pebbles', 'age': 1,  'active': true }
+	 * ];
+	 *
+	 * _.find(users, function(o) { return o.age < 40; });
+	 * // => object for 'barney'
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.find(users, { 'age': 1, 'active': true });
+	 * // => object for 'pebbles'
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.find(users, ['active', false]);
+	 * // => object for 'fred'
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.find(users, 'active');
+	 * // => object for 'barney'
+	 */
+	var find = createFind(findIndex);
+
+	module.exports = find;
+
+
+/***/ }),
+/* 225 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseIteratee = __webpack_require__(129),
+	    isArrayLike = __webpack_require__(80),
+	    keys = __webpack_require__(60);
+
+	/**
+	 * Creates a `_.find` or `_.findLast` function.
+	 *
+	 * @private
+	 * @param {Function} findIndexFunc The function to find the collection index.
+	 * @returns {Function} Returns the new find function.
+	 */
+	function createFind(findIndexFunc) {
+	  return function(collection, predicate, fromIndex) {
+	    var iterable = Object(collection);
+	    if (!isArrayLike(collection)) {
+	      var iteratee = baseIteratee(predicate, 3);
+	      collection = keys(collection);
+	      predicate = function(key) { return iteratee(iterable[key], key, iterable); };
+	    }
+	    var index = findIndexFunc(collection, predicate, fromIndex);
+	    return index > -1 ? iterable[iteratee ? collection[index] : index] : undefined;
+	  };
+	}
+
+	module.exports = createFind;
+
+
+/***/ }),
+/* 226 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseFindIndex = __webpack_require__(194),
+	    baseIteratee = __webpack_require__(129),
+	    toInteger = __webpack_require__(227);
+
+	/* Built-in method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+
+	/**
+	 * This method is like `_.find` except that it returns the index of the first
+	 * element `predicate` returns truthy for instead of the element itself.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 1.1.0
+	 * @category Array
+	 * @param {Array} array The array to inspect.
+	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
+	 * @param {number} [fromIndex=0] The index to search from.
+	 * @returns {number} Returns the index of the found element, else `-1`.
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'barney',  'active': false },
+	 *   { 'user': 'fred',    'active': false },
+	 *   { 'user': 'pebbles', 'active': true }
+	 * ];
+	 *
+	 * _.findIndex(users, function(o) { return o.user == 'barney'; });
+	 * // => 0
+	 *
+	 * // The `_.matches` iteratee shorthand.
+	 * _.findIndex(users, { 'user': 'fred', 'active': false });
+	 * // => 1
+	 *
+	 * // The `_.matchesProperty` iteratee shorthand.
+	 * _.findIndex(users, ['active', false]);
+	 * // => 0
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.findIndex(users, 'active');
+	 * // => 2
+	 */
+	function findIndex(array, predicate, fromIndex) {
+	  var length = array == null ? 0 : array.length;
+	  if (!length) {
+	    return -1;
+	  }
+	  var index = fromIndex == null ? 0 : toInteger(fromIndex);
+	  if (index < 0) {
+	    index = nativeMax(length + index, 0);
+	  }
+	  return baseFindIndex(array, baseIteratee(predicate, 3), index);
+	}
+
+	module.exports = findIndex;
+
+
+/***/ }),
+/* 227 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var toFinite = __webpack_require__(228);
+
+	/**
+	 * Converts `value` to an integer.
+	 *
+	 * **Note:** This method is loosely based on
+	 * [`ToInteger`](http://www.ecma-international.org/ecma-262/7.0/#sec-tointeger).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Lang
+	 * @param {*} value The value to convert.
+	 * @returns {number} Returns the converted integer.
+	 * @example
+	 *
+	 * _.toInteger(3.2);
+	 * // => 3
+	 *
+	 * _.toInteger(Number.MIN_VALUE);
+	 * // => 0
+	 *
+	 * _.toInteger(Infinity);
+	 * // => 1.7976931348623157e+308
+	 *
+	 * _.toInteger('3.2');
+	 * // => 3
+	 */
+	function toInteger(value) {
+	  var result = toFinite(value),
+	      remainder = result % 1;
+
+	  return result === result ? (remainder ? result - remainder : result) : 0;
+	}
+
+	module.exports = toInteger;
+
+
+/***/ }),
+/* 228 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var toNumber = __webpack_require__(229);
+
+	/** Used as references for various `Number` constants. */
+	var INFINITY = 1 / 0,
+	    MAX_INTEGER = 1.7976931348623157e+308;
+
+	/**
+	 * Converts `value` to a finite number.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.12.0
+	 * @category Lang
+	 * @param {*} value The value to convert.
+	 * @returns {number} Returns the converted number.
+	 * @example
+	 *
+	 * _.toFinite(3.2);
+	 * // => 3.2
+	 *
+	 * _.toFinite(Number.MIN_VALUE);
+	 * // => 5e-324
+	 *
+	 * _.toFinite(Infinity);
+	 * // => 1.7976931348623157e+308
+	 *
+	 * _.toFinite('3.2');
+	 * // => 3.2
+	 */
+	function toFinite(value) {
+	  if (!value) {
+	    return value === 0 ? value : 0;
+	  }
+	  value = toNumber(value);
+	  if (value === INFINITY || value === -INFINITY) {
+	    var sign = (value < 0 ? -1 : 1);
+	    return sign * MAX_INTEGER;
+	  }
+	  return value === value ? value : 0;
+	}
+
+	module.exports = toFinite;
+
+
+/***/ }),
+/* 229 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var isObject = __webpack_require__(34),
+	    isSymbol = __webpack_require__(152);
+
+	/** Used as references for various `Number` constants. */
+	var NAN = 0 / 0;
+
+	/** Used to match leading and trailing whitespace. */
+	var reTrim = /^\s+|\s+$/g;
+
+	/** Used to detect bad signed hexadecimal string values. */
+	var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+
+	/** Used to detect binary string values. */
+	var reIsBinary = /^0b[01]+$/i;
+
+	/** Used to detect octal string values. */
+	var reIsOctal = /^0o[0-7]+$/i;
+
+	/** Built-in method references without a dependency on `root`. */
+	var freeParseInt = parseInt;
+
+	/**
+	 * Converts `value` to a number.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Lang
+	 * @param {*} value The value to process.
+	 * @returns {number} Returns the number.
+	 * @example
+	 *
+	 * _.toNumber(3.2);
+	 * // => 3.2
+	 *
+	 * _.toNumber(Number.MIN_VALUE);
+	 * // => 5e-324
+	 *
+	 * _.toNumber(Infinity);
+	 * // => Infinity
+	 *
+	 * _.toNumber('3.2');
+	 * // => 3.2
+	 */
+	function toNumber(value) {
+	  if (typeof value == 'number') {
+	    return value;
+	  }
+	  if (isSymbol(value)) {
+	    return NAN;
+	  }
+	  if (isObject(value)) {
+	    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
+	    value = isObject(other) ? (other + '') : other;
+	  }
+	  if (typeof value != 'string') {
+	    return value === 0 ? value : +value;
+	  }
+	  value = value.replace(reTrim, '');
+	  var isBinary = reIsBinary.test(value);
+	  return (isBinary || reIsOctal.test(value))
+	    ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
+	    : (reIsBadHex.test(value) ? NAN : +value);
+	}
+
+	module.exports = toNumber;
+
+
+/***/ }),
+/* 230 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseFlatten = __webpack_require__(183);
+
+	/**
+	 * Flattens `array` a single level deep.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Array
+	 * @param {Array} array The array to flatten.
+	 * @returns {Array} Returns the new flattened array.
+	 * @example
+	 *
+	 * _.flatten([1, [2, [3, [4]], 5]]);
+	 * // => [1, 2, [3, [4]], 5]
+	 */
+	function flatten(array) {
+	  var length = array == null ? 0 : array.length;
+	  return length ? baseFlatten(array, 1) : [];
+	}
+
+	module.exports = flatten;
+
+
+/***/ }),
+/* 231 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseFor = __webpack_require__(122),
+	    castFunction = __webpack_require__(125),
+	    keysIn = __webpack_require__(82);
+
+	/**
+	 * Iterates over own and inherited enumerable string keyed properties of an
+	 * object and invokes `iteratee` for each property. The iteratee is invoked
+	 * with three arguments: (value, key, object). Iteratee functions may exit
+	 * iteration early by explicitly returning `false`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.3.0
+	 * @category Object
+	 * @param {Object} object The object to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @returns {Object} Returns `object`.
+	 * @see _.forInRight
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.forIn(new Foo, function(value, key) {
+	 *   console.log(key);
+	 * });
+	 * // => Logs 'a', 'b', then 'c' (iteration order is not guaranteed).
+	 */
+	function forIn(object, iteratee) {
+	  return object == null
+	    ? object
+	    : baseFor(object, castFunction(iteratee), keysIn);
+	}
+
+	module.exports = forIn;
+
+
+/***/ }),
+/* 232 */
+/***/ (function(module, exports) {
+
+	/**
+	 * Gets the last element of `array`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Array
+	 * @param {Array} array The array to query.
+	 * @returns {*} Returns the last element of `array`.
+	 * @example
+	 *
+	 * _.last([1, 2, 3]);
+	 * // => 3
+	 */
+	function last(array) {
+	  var length = array == null ? 0 : array.length;
+	  return length ? array[length - 1] : undefined;
+	}
+
+	module.exports = last;
+
+
+/***/ }),
+/* 233 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseAssignValue = __webpack_require__(56),
+	    baseForOwn = __webpack_require__(121),
+	    baseIteratee = __webpack_require__(129);
+
+	/**
+	 * Creates an object with the same keys as `object` and values generated
+	 * by running each own enumerable string keyed property of `object` thru
+	 * `iteratee`. The iteratee is invoked with three arguments:
+	 * (value, key, object).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 2.4.0
+	 * @category Object
+	 * @param {Object} object The object to iterate over.
+	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
+	 * @returns {Object} Returns the new mapped object.
+	 * @see _.mapKeys
+	 * @example
+	 *
+	 * var users = {
+	 *   'fred':    { 'user': 'fred',    'age': 40 },
+	 *   'pebbles': { 'user': 'pebbles', 'age': 1 }
+	 * };
+	 *
+	 * _.mapValues(users, function(o) { return o.age; });
+	 * // => { 'fred': 40, 'pebbles': 1 } (iteration order is not guaranteed)
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.mapValues(users, 'age');
+	 * // => { 'fred': 40, 'pebbles': 1 } (iteration order is not guaranteed)
+	 */
+	function mapValues(object, iteratee) {
+	  var result = {};
+	  iteratee = baseIteratee(iteratee, 3);
+
+	  baseForOwn(object, function(value, key, object) {
+	    baseAssignValue(result, key, iteratee(value, key, object));
+	  });
+	  return result;
+	}
+
+	module.exports = mapValues;
+
+
+/***/ }),
+/* 234 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseExtremum = __webpack_require__(235),
+	    baseGt = __webpack_require__(236),
+	    identity = __webpack_require__(126);
+
+	/**
+	 * Computes the maximum value of `array`. If `array` is empty or falsey,
+	 * `undefined` is returned.
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @memberOf _
+	 * @category Math
+	 * @param {Array} array The array to iterate over.
+	 * @returns {*} Returns the maximum value.
+	 * @example
+	 *
+	 * _.max([4, 2, 8, 6]);
+	 * // => 8
+	 *
+	 * _.max([]);
+	 * // => undefined
+	 */
+	function max(array) {
+	  return (array && array.length)
+	    ? baseExtremum(array, identity, baseGt)
+	    : undefined;
+	}
+
+	module.exports = max;
+
+
+/***/ }),
+/* 235 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var isSymbol = __webpack_require__(152);
+
+	/**
+	 * The base implementation of methods like `_.max` and `_.min` which accepts a
+	 * `comparator` to determine the extremum value.
+	 *
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} iteratee The iteratee invoked per iteration.
+	 * @param {Function} comparator The comparator used to compare values.
+	 * @returns {*} Returns the extremum value.
+	 */
+	function baseExtremum(array, iteratee, comparator) {
+	  var index = -1,
+	      length = array.length;
+
+	  while (++index < length) {
+	    var value = array[index],
+	        current = iteratee(value);
+
+	    if (current != null && (computed === undefined
+	          ? (current === current && !isSymbol(current))
+	          : comparator(current, computed)
+	        )) {
+	      var computed = current,
+	          result = value;
+	    }
+	  }
+	  return result;
+	}
+
+	module.exports = baseExtremum;
+
+
+/***/ }),
+/* 236 */
+/***/ (function(module, exports) {
+
+	/**
+	 * The base implementation of `_.gt` which doesn't coerce arguments.
+	 *
+	 * @private
+	 * @param {*} value The value to compare.
+	 * @param {*} other The other value to compare.
+	 * @returns {boolean} Returns `true` if `value` is greater than `other`,
+	 *  else `false`.
+	 */
+	function baseGt(value, other) {
+	  return value > other;
+	}
+
+	module.exports = baseGt;
+
+
+/***/ }),
+/* 237 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseMerge = __webpack_require__(238),
+	    createAssigner = __webpack_require__(244);
+
+	/**
+	 * This method is like `_.assign` except that it recursively merges own and
+	 * inherited enumerable string keyed properties of source objects into the
+	 * destination object. Source properties that resolve to `undefined` are
+	 * skipped if a destination value exists. Array and plain object properties
+	 * are merged recursively. Other objects and value types are overridden by
+	 * assignment. Source objects are applied from left to right. Subsequent
+	 * sources overwrite property assignments of previous sources.
+	 *
+	 * **Note:** This method mutates `object`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.5.0
+	 * @category Object
+	 * @param {Object} object The destination object.
+	 * @param {...Object} [sources] The source objects.
+	 * @returns {Object} Returns `object`.
+	 * @example
+	 *
+	 * var object = {
+	 *   'a': [{ 'b': 2 }, { 'd': 4 }]
+	 * };
+	 *
+	 * var other = {
+	 *   'a': [{ 'c': 3 }, { 'e': 5 }]
+	 * };
+	 *
+	 * _.merge(object, other);
+	 * // => { 'a': [{ 'b': 2, 'c': 3 }, { 'd': 4, 'e': 5 }] }
+	 */
+	var merge = createAssigner(function(object, source, srcIndex) {
+	  baseMerge(object, source, srcIndex);
+	});
+
+	module.exports = merge;
+
+
+/***/ }),
+/* 238 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var Stack = __webpack_require__(10),
+	    assignMergeValue = __webpack_require__(239),
+	    baseFor = __webpack_require__(122),
+	    baseMergeDeep = __webpack_require__(240),
+	    isObject = __webpack_require__(34),
+	    keysIn = __webpack_require__(82),
+	    safeGet = __webpack_require__(242);
+
+	/**
+	 * The base implementation of `_.merge` without support for multiple sources.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @param {number} srcIndex The index of `source`.
+	 * @param {Function} [customizer] The function to customize merged values.
+	 * @param {Object} [stack] Tracks traversed source values and their merged
+	 *  counterparts.
+	 */
+	function baseMerge(object, source, srcIndex, customizer, stack) {
+	  if (object === source) {
+	    return;
+	  }
+	  baseFor(source, function(srcValue, key) {
+	    stack || (stack = new Stack);
+	    if (isObject(srcValue)) {
+	      baseMergeDeep(object, source, key, srcIndex, baseMerge, customizer, stack);
+	    }
+	    else {
+	      var newValue = customizer
+	        ? customizer(safeGet(object, key), srcValue, (key + ''), object, source, stack)
+	        : undefined;
+
+	      if (newValue === undefined) {
+	        newValue = srcValue;
+	      }
+	      assignMergeValue(object, key, newValue);
+	    }
+	  }, keysIn);
+	}
+
+	module.exports = baseMerge;
+
+
+/***/ }),
+/* 239 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseAssignValue = __webpack_require__(56),
+	    eq = __webpack_require__(15);
+
+	/**
+	 * This function is like `assignValue` except that it doesn't assign
+	 * `undefined` values.
+	 *
+	 * @private
+	 * @param {Object} object The object to modify.
+	 * @param {string} key The key of the property to assign.
+	 * @param {*} value The value to assign.
+	 */
+	function assignMergeValue(object, key, value) {
+	  if ((value !== undefined && !eq(object[key], value)) ||
+	      (value === undefined && !(key in object))) {
+	    baseAssignValue(object, key, value);
+	  }
+	}
+
+	module.exports = assignMergeValue;
+
+
+/***/ }),
+/* 240 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var assignMergeValue = __webpack_require__(239),
+	    cloneBuffer = __webpack_require__(85),
+	    cloneTypedArray = __webpack_require__(110),
+	    copyArray = __webpack_require__(86),
+	    initCloneObject = __webpack_require__(111),
+	    isArguments = __webpack_require__(63),
+	    isArray = __webpack_require__(66),
+	    isArrayLikeObject = __webpack_require__(200),
+	    isBuffer = __webpack_require__(67),
+	    isFunction = __webpack_require__(27),
+	    isObject = __webpack_require__(34),
+	    isPlainObject = __webpack_require__(241),
+	    isTypedArray = __webpack_require__(71),
+	    safeGet = __webpack_require__(242),
+	    toPlainObject = __webpack_require__(243);
+
+	/**
+	 * A specialized version of `baseMerge` for arrays and objects which performs
+	 * deep merges and tracks traversed objects enabling objects with circular
+	 * references to be merged.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @param {string} key The key of the value to merge.
+	 * @param {number} srcIndex The index of `source`.
+	 * @param {Function} mergeFunc The function to merge values.
+	 * @param {Function} [customizer] The function to customize assigned values.
+	 * @param {Object} [stack] Tracks traversed source values and their merged
+	 *  counterparts.
+	 */
+	function baseMergeDeep(object, source, key, srcIndex, mergeFunc, customizer, stack) {
+	  var objValue = safeGet(object, key),
+	      srcValue = safeGet(source, key),
+	      stacked = stack.get(srcValue);
+
+	  if (stacked) {
+	    assignMergeValue(object, key, stacked);
+	    return;
+	  }
+	  var newValue = customizer
+	    ? customizer(objValue, srcValue, (key + ''), object, source, stack)
+	    : undefined;
+
+	  var isCommon = newValue === undefined;
+
+	  if (isCommon) {
+	    var isArr = isArray(srcValue),
+	        isBuff = !isArr && isBuffer(srcValue),
+	        isTyped = !isArr && !isBuff && isTypedArray(srcValue);
+
+	    newValue = srcValue;
+	    if (isArr || isBuff || isTyped) {
+	      if (isArray(objValue)) {
+	        newValue = objValue;
+	      }
+	      else if (isArrayLikeObject(objValue)) {
+	        newValue = copyArray(objValue);
+	      }
+	      else if (isBuff) {
+	        isCommon = false;
+	        newValue = cloneBuffer(srcValue, true);
+	      }
+	      else if (isTyped) {
+	        isCommon = false;
+	        newValue = cloneTypedArray(srcValue, true);
+	      }
+	      else {
+	        newValue = [];
+	      }
+	    }
+	    else if (isPlainObject(srcValue) || isArguments(srcValue)) {
+	      newValue = objValue;
+	      if (isArguments(objValue)) {
+	        newValue = toPlainObject(objValue);
+	      }
+	      else if (!isObject(objValue) || isFunction(objValue)) {
+	        newValue = initCloneObject(srcValue);
+	      }
+	    }
+	    else {
+	      isCommon = false;
+	    }
+	  }
+	  if (isCommon) {
+	    // Recursively merge objects and arrays (susceptible to call stack limits).
+	    stack.set(srcValue, newValue);
+	    mergeFunc(newValue, srcValue, srcIndex, customizer, stack);
+	    stack['delete'](srcValue);
+	  }
+	  assignMergeValue(object, key, newValue);
+	}
+
+	module.exports = baseMergeDeep;
+
+
+/***/ }),
+/* 241 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseGetTag = __webpack_require__(28),
+	    getPrototype = __webpack_require__(94),
+	    isObjectLike = __webpack_require__(65);
+
+	/** `Object#toString` result references. */
+	var objectTag = '[object Object]';
+
+	/** Used for built-in method references. */
+	var funcProto = Function.prototype,
+	    objectProto = Object.prototype;
+
+	/** Used to resolve the decompiled source of functions. */
+	var funcToString = funcProto.toString;
+
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+
+	/** Used to infer the `Object` constructor. */
+	var objectCtorString = funcToString.call(Object);
+
+	/**
+	 * Checks if `value` is a plain object, that is, an object created by the
+	 * `Object` constructor or one with a `[[Prototype]]` of `null`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.8.0
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 * }
+	 *
+	 * _.isPlainObject(new Foo);
+	 * // => false
+	 *
+	 * _.isPlainObject([1, 2, 3]);
+	 * // => false
+	 *
+	 * _.isPlainObject({ 'x': 0, 'y': 0 });
+	 * // => true
+	 *
+	 * _.isPlainObject(Object.create(null));
+	 * // => true
+	 */
+	function isPlainObject(value) {
+	  if (!isObjectLike(value) || baseGetTag(value) != objectTag) {
+	    return false;
+	  }
+	  var proto = getPrototype(value);
+	  if (proto === null) {
+	    return true;
+	  }
+	  var Ctor = hasOwnProperty.call(proto, 'constructor') && proto.constructor;
+	  return typeof Ctor == 'function' && Ctor instanceof Ctor &&
+	    funcToString.call(Ctor) == objectCtorString;
+	}
+
+	module.exports = isPlainObject;
+
+
+/***/ }),
+/* 242 */
+/***/ (function(module, exports) {
+
+	/**
+	 * Gets the value at `key`, unless `key` is "__proto__" or "constructor".
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {string} key The key of the property to get.
+	 * @returns {*} Returns the property value.
+	 */
+	function safeGet(object, key) {
+	  if (key === 'constructor' && typeof object[key] === 'function') {
+	    return;
+	  }
+
+	  if (key == '__proto__') {
+	    return;
+	  }
+
+	  return object[key];
+	}
+
+	module.exports = safeGet;
+
+
+/***/ }),
+/* 243 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var copyObject = __webpack_require__(59),
+	    keysIn = __webpack_require__(82);
+
+	/**
+	 * Converts `value` to a plain object flattening inherited enumerable string
+	 * keyed properties of `value` to own properties of the plain object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 3.0.0
+	 * @category Lang
+	 * @param {*} value The value to convert.
+	 * @returns {Object} Returns the converted plain object.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.assign({ 'a': 1 }, new Foo);
+	 * // => { 'a': 1, 'b': 2 }
+	 *
+	 * _.assign({ 'a': 1 }, _.toPlainObject(new Foo));
+	 * // => { 'a': 1, 'b': 2, 'c': 3 }
+	 */
+	function toPlainObject(value) {
+	  return copyObject(value, keysIn(value));
+	}
+
+	module.exports = toPlainObject;
+
+
+/***/ }),
+/* 244 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseRest = __webpack_require__(185),
+	    isIterateeCall = __webpack_require__(223);
+
+	/**
+	 * Creates a function like `_.assign`.
+	 *
+	 * @private
+	 * @param {Function} assigner The function to assign values.
+	 * @returns {Function} Returns the new assigner function.
+	 */
+	function createAssigner(assigner) {
+	  return baseRest(function(object, sources) {
+	    var index = -1,
+	        length = sources.length,
+	        customizer = length > 1 ? sources[length - 1] : undefined,
+	        guard = length > 2 ? sources[2] : undefined;
+
+	    customizer = (assigner.length > 3 && typeof customizer == 'function')
+	      ? (length--, customizer)
+	      : undefined;
+
+	    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
+	      customizer = length < 3 ? undefined : customizer;
+	      length = 1;
+	    }
+	    object = Object(object);
+	    while (++index < length) {
+	      var source = sources[index];
+	      if (source) {
+	        assigner(object, source, index, customizer);
+	      }
+	    }
+	    return object;
+	  });
+	}
+
+	module.exports = createAssigner;
+
+
+/***/ }),
+/* 245 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseExtremum = __webpack_require__(235),
+	    baseLt = __webpack_require__(246),
+	    identity = __webpack_require__(126);
+
+	/**
+	 * Computes the minimum value of `array`. If `array` is empty or falsey,
+	 * `undefined` is returned.
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @memberOf _
+	 * @category Math
+	 * @param {Array} array The array to iterate over.
+	 * @returns {*} Returns the minimum value.
+	 * @example
+	 *
+	 * _.min([4, 2, 8, 6]);
+	 * // => 2
+	 *
+	 * _.min([]);
+	 * // => undefined
+	 */
+	function min(array) {
+	  return (array && array.length)
+	    ? baseExtremum(array, identity, baseLt)
+	    : undefined;
+	}
+
+	module.exports = min;
+
+
+/***/ }),
+/* 246 */
+/***/ (function(module, exports) {
+
+	/**
+	 * The base implementation of `_.lt` which doesn't coerce arguments.
+	 *
+	 * @private
+	 * @param {*} value The value to compare.
+	 * @param {*} other The other value to compare.
+	 * @returns {boolean} Returns `true` if `value` is less than `other`,
+	 *  else `false`.
+	 */
+	function baseLt(value, other) {
+	  return value < other;
+	}
+
+	module.exports = baseLt;
+
+
+/***/ }),
+/* 247 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseExtremum = __webpack_require__(235),
+	    baseIteratee = __webpack_require__(129),
+	    baseLt = __webpack_require__(246);
+
+	/**
+	 * This method is like `_.min` except that it accepts `iteratee` which is
+	 * invoked for each element in `array` to generate the criterion by which
+	 * the value is ranked. The iteratee is invoked with one argument: (value).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Math
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} [iteratee=_.identity] The iteratee invoked per element.
+	 * @returns {*} Returns the minimum value.
+	 * @example
+	 *
+	 * var objects = [{ 'n': 1 }, { 'n': 2 }];
+	 *
+	 * _.minBy(objects, function(o) { return o.n; });
+	 * // => { 'n': 1 }
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.minBy(objects, 'n');
+	 * // => { 'n': 1 }
+	 */
+	function minBy(array, iteratee) {
+	  return (array && array.length)
+	    ? baseExtremum(array, baseIteratee(iteratee, 2), baseLt)
+	    : undefined;
+	}
+
+	module.exports = minBy;
+
+
+/***/ }),
+/* 248 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var root = __webpack_require__(30);
+
+	/**
+	 * Gets the timestamp of the number of milliseconds that have elapsed since
+	 * the Unix epoch (1 January 1970 00:00:00 UTC).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 2.4.0
+	 * @category Date
+	 * @returns {number} Returns the timestamp.
+	 * @example
+	 *
+	 * _.defer(function(stamp) {
+	 *   console.log(_.now() - stamp);
+	 * }, _.now());
+	 * // => Logs the number of milliseconds it took for the deferred invocation.
+	 */
+	var now = function() {
+	  return root.Date.now();
+	};
+
+	module.exports = now;
+
+
+/***/ }),
+/* 249 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var basePick = __webpack_require__(250),
+	    flatRest = __webpack_require__(253);
+
+	/**
+	 * Creates an object composed of the picked `object` properties.
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The source object.
+	 * @param {...(string|string[])} [paths] The property paths to pick.
+	 * @returns {Object} Returns the new object.
+	 * @example
+	 *
+	 * var object = { 'a': 1, 'b': '2', 'c': 3 };
+	 *
+	 * _.pick(object, ['a', 'c']);
+	 * // => { 'a': 1, 'c': 3 }
+	 */
+	var pick = flatRest(function(object, paths) {
+	  return object == null ? {} : basePick(object, paths);
+	});
+
+	module.exports = pick;
+
+
+/***/ }),
+/* 250 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var basePickBy = __webpack_require__(251),
+	    hasIn = __webpack_require__(160);
+
+	/**
+	 * The base implementation of `_.pick` without support for individual
+	 * property identifiers.
+	 *
+	 * @private
+	 * @param {Object} object The source object.
+	 * @param {string[]} paths The property paths to pick.
+	 * @returns {Object} Returns the new object.
+	 */
+	function basePick(object, paths) {
+	  return basePickBy(object, paths, function(value, path) {
+	    return hasIn(object, path);
+	  });
+	}
+
+	module.exports = basePick;
+
+
+/***/ }),
+/* 251 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseGet = __webpack_require__(149),
+	    baseSet = __webpack_require__(252),
+	    castPath = __webpack_require__(150);
+
+	/**
+	 * The base implementation of  `_.pickBy` without support for iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Object} object The source object.
+	 * @param {string[]} paths The property paths to pick.
+	 * @param {Function} predicate The function invoked per property.
+	 * @returns {Object} Returns the new object.
+	 */
+	function basePickBy(object, paths, predicate) {
+	  var index = -1,
+	      length = paths.length,
+	      result = {};
+
+	  while (++index < length) {
+	    var path = paths[index],
+	        value = baseGet(object, path);
+
+	    if (predicate(value, path)) {
+	      baseSet(result, castPath(path, object), value);
+	    }
+	  }
+	  return result;
+	}
+
+	module.exports = basePickBy;
+
+
+/***/ }),
+/* 252 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var assignValue = __webpack_require__(55),
+	    castPath = __webpack_require__(150),
+	    isIndex = __webpack_require__(70),
+	    isObject = __webpack_require__(34),
+	    toKey = __webpack_require__(159);
+
+	/**
+	 * The base implementation of `_.set`.
+	 *
+	 * @private
+	 * @param {Object} object The object to modify.
+	 * @param {Array|string} path The path of the property to set.
+	 * @param {*} value The value to set.
+	 * @param {Function} [customizer] The function to customize path creation.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseSet(object, path, value, customizer) {
+	  if (!isObject(object)) {
+	    return object;
+	  }
+	  path = castPath(path, object);
+
+	  var index = -1,
+	      length = path.length,
+	      lastIndex = length - 1,
+	      nested = object;
+
+	  while (nested != null && ++index < length) {
+	    var key = toKey(path[index]),
+	        newValue = value;
+
+	    if (index != lastIndex) {
+	      var objValue = nested[key];
+	      newValue = customizer ? customizer(objValue, key, nested) : undefined;
+	      if (newValue === undefined) {
+	        newValue = isObject(objValue)
+	          ? objValue
+	          : (isIndex(path[index + 1]) ? [] : {});
+	      }
+	    }
+	    assignValue(nested, key, newValue);
+	    nested = nested[key];
+	  }
+	  return object;
+	}
+
+	module.exports = baseSet;
+
+
+/***/ }),
+/* 253 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var flatten = __webpack_require__(230),
+	    overRest = __webpack_require__(186),
+	    setToString = __webpack_require__(188);
+
+	/**
+	 * A specialized version of `baseRest` which flattens the rest array.
+	 *
+	 * @private
+	 * @param {Function} func The function to apply a rest parameter to.
+	 * @returns {Function} Returns the new function.
+	 */
+	function flatRest(func) {
+	  return setToString(overRest(func, undefined, flatten), func + '');
+	}
+
+	module.exports = flatRest;
+
+
+/***/ }),
+/* 254 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var createRange = __webpack_require__(255);
+
+	/**
+	 * Creates an array of numbers (positive and/or negative) progressing from
+	 * `start` up to, but not including, `end`. A step of `-1` is used if a negative
+	 * `start` is specified without an `end` or `step`. If `end` is not specified,
+	 * it's set to `start` with `start` then set to `0`.
+	 *
+	 * **Note:** JavaScript follows the IEEE-754 standard for resolving
+	 * floating-point values which can produce unexpected results.
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @memberOf _
+	 * @category Util
+	 * @param {number} [start=0] The start of the range.
+	 * @param {number} end The end of the range.
+	 * @param {number} [step=1] The value to increment or decrement by.
+	 * @returns {Array} Returns the range of numbers.
+	 * @see _.inRange, _.rangeRight
+	 * @example
+	 *
+	 * _.range(4);
+	 * // => [0, 1, 2, 3]
+	 *
+	 * _.range(-4);
+	 * // => [0, -1, -2, -3]
+	 *
+	 * _.range(1, 5);
+	 * // => [1, 2, 3, 4]
+	 *
+	 * _.range(0, 20, 5);
+	 * // => [0, 5, 10, 15]
+	 *
+	 * _.range(0, -4, -1);
+	 * // => [0, -1, -2, -3]
+	 *
+	 * _.range(1, 4, 0);
+	 * // => [1, 1, 1]
+	 *
+	 * _.range(0);
+	 * // => []
+	 */
+	var range = createRange();
+
+	module.exports = range;
+
+
+/***/ }),
+/* 255 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseRange = __webpack_require__(256),
+	    isIterateeCall = __webpack_require__(223),
+	    toFinite = __webpack_require__(228);
+
+	/**
+	 * Creates a `_.range` or `_.rangeRight` function.
+	 *
+	 * @private
+	 * @param {boolean} [fromRight] Specify iterating from right to left.
+	 * @returns {Function} Returns the new range function.
+	 */
+	function createRange(fromRight) {
+	  return function(start, end, step) {
+	    if (step && typeof step != 'number' && isIterateeCall(start, end, step)) {
+	      end = step = undefined;
+	    }
+	    // Ensure the sign of `-0` is preserved.
+	    start = toFinite(start);
+	    if (end === undefined) {
+	      end = start;
+	      start = 0;
+	    } else {
+	      end = toFinite(end);
+	    }
+	    step = step === undefined ? (start < end ? 1 : -1) : toFinite(step);
+	    return baseRange(start, end, step, fromRight);
+	  };
+	}
+
+	module.exports = createRange;
+
+
+/***/ }),
+/* 256 */
+/***/ (function(module, exports) {
+
+	/* Built-in method references for those with the same name as other `lodash` methods. */
+	var nativeCeil = Math.ceil,
+	    nativeMax = Math.max;
+
+	/**
+	 * The base implementation of `_.range` and `_.rangeRight` which doesn't
+	 * coerce arguments.
+	 *
+	 * @private
+	 * @param {number} start The start of the range.
+	 * @param {number} end The end of the range.
+	 * @param {number} step The value to increment or decrement by.
+	 * @param {boolean} [fromRight] Specify iterating from right to left.
+	 * @returns {Array} Returns the range of numbers.
+	 */
+	function baseRange(start, end, step, fromRight) {
+	  var index = -1,
+	      length = nativeMax(nativeCeil((end - start) / (step || 1)), 0),
+	      result = Array(length);
+
+	  while (length--) {
+	    result[fromRight ? length : ++index] = start;
+	    start += step;
+	  }
+	  return result;
+	}
+
+	module.exports = baseRange;
+
+
+/***/ }),
+/* 257 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var baseFlatten = __webpack_require__(183),
+	    baseOrderBy = __webpack_require__(258),
+	    baseRest = __webpack_require__(185),
+	    isIterateeCall = __webpack_require__(223);
+
+	/**
+	 * Creates an array of elements, sorted in ascending order by the results of
+	 * running each element in a collection thru each iteratee. This method
+	 * performs a stable sort, that is, it preserves the original sort order of
+	 * equal elements. The iteratees are invoked with one argument: (value).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {...(Function|Function[])} [iteratees=[_.identity]]
+	 *  The iteratees to sort by.
+	 * @returns {Array} Returns the new sorted array.
+	 * @example
+	 *
+	 * var users = [
+	 *   { 'user': 'fred',   'age': 48 },
+	 *   { 'user': 'barney', 'age': 36 },
+	 *   { 'user': 'fred',   'age': 40 },
+	 *   { 'user': 'barney', 'age': 34 }
+	 * ];
+	 *
+	 * _.sortBy(users, [function(o) { return o.user; }]);
+	 * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
+	 *
+	 * _.sortBy(users, ['user', 'age']);
+	 * // => objects for [['barney', 34], ['barney', 36], ['fred', 40], ['fred', 48]]
+	 */
+	var sortBy = baseRest(function(collection, iteratees) {
+	  if (collection == null) {
+	    return [];
+	  }
+	  var length = iteratees.length;
+	  if (length > 1 && isIterateeCall(collection, iteratees[0], iteratees[1])) {
+	    iteratees = [];
+	  } else if (length > 2 && isIterateeCall(iteratees[0], iteratees[1], iteratees[2])) {
+	    iteratees = [iteratees[0]];
+	  }
+	  return baseOrderBy(collection, baseFlatten(iteratees, 1), []);
+	});
+
+	module.exports = sortBy;
+
+
+/***/ }),
+/* 258 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var arrayMap = __webpack_require__(158),
+	    baseIteratee = __webpack_require__(129),
+	    baseMap = __webpack_require__(171),
+	    baseSortBy = __webpack_require__(259),
+	    baseUnary = __webpack_require__(74),
+	    compareMultiple = __webpack_require__(260),
+	    identity = __webpack_require__(126);
+
+	/**
+	 * The base implementation of `_.orderBy` without param guards.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function[]|Object[]|string[]} iteratees The iteratees to sort by.
+	 * @param {string[]} orders The sort orders of `iteratees`.
+	 * @returns {Array} Returns the new sorted array.
+	 */
+	function baseOrderBy(collection, iteratees, orders) {
+	  var index = -1;
+	  iteratees = arrayMap(iteratees.length ? iteratees : [identity], baseUnary(baseIteratee));
+
+	  var result = baseMap(collection, function(value, key, collection) {
+	    var criteria = arrayMap(iteratees, function(iteratee) {
+	      return iteratee(value);
+	    });
+	    return { 'criteria': criteria, 'index': ++index, 'value': value };
+	  });
+
+	  return baseSortBy(result, function(object, other) {
+	    return compareMultiple(object, other, orders);
+	  });
+	}
+
+	module.exports = baseOrderBy;
+
+
+/***/ }),
+/* 259 */
+/***/ (function(module, exports) {
+
+	/**
+	 * The base implementation of `_.sortBy` which uses `comparer` to define the
+	 * sort order of `array` and replaces criteria objects with their corresponding
+	 * values.
+	 *
+	 * @private
+	 * @param {Array} array The array to sort.
+	 * @param {Function} comparer The function to define sort order.
+	 * @returns {Array} Returns `array`.
+	 */
+	function baseSortBy(array, comparer) {
+	  var length = array.length;
+
+	  array.sort(comparer);
+	  while (length--) {
+	    array[length] = array[length].value;
+	  }
+	  return array;
+	}
+
+	module.exports = baseSortBy;
+
+
+/***/ }),
+/* 260 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var compareAscending = __webpack_require__(261);
+
+	/**
+	 * Used by `_.orderBy` to compare multiple properties of a value to another
+	 * and stable sort them.
+	 *
+	 * If `orders` is unspecified, all values are sorted in ascending order. Otherwise,
+	 * specify an order of "desc" for descending or "asc" for ascending sort order
+	 * of corresponding values.
+	 *
+	 * @private
+	 * @param {Object} object The object to compare.
+	 * @param {Object} other The other object to compare.
+	 * @param {boolean[]|string[]} orders The order to sort by for each property.
+	 * @returns {number} Returns the sort order indicator for `object`.
+	 */
+	function compareMultiple(object, other, orders) {
+	  var index = -1,
+	      objCriteria = object.criteria,
+	      othCriteria = other.criteria,
+	      length = objCriteria.length,
+	      ordersLength = orders.length;
+
+	  while (++index < length) {
+	    var result = compareAscending(objCriteria[index], othCriteria[index]);
+	    if (result) {
+	      if (index >= ordersLength) {
+	        return result;
+	      }
+	      var order = orders[index];
+	      return result * (order == 'desc' ? -1 : 1);
+	    }
+	  }
+	  // Fixes an `Array#sort` bug in the JS engine embedded in Adobe applications
+	  // that causes it, under certain circumstances, to provide the same value for
+	  // `object` and `other`. See https://github.com/jashkenas/underscore/pull/1247
+	  // for more details.
+	  //
+	  // This also ensures a stable sort in V8 and other engines.
+	  // See https://bugs.chromium.org/p/v8/issues/detail?id=90 for more details.
+	  return object.index - other.index;
+	}
+
+	module.exports = compareMultiple;
+
+
+/***/ }),
+/* 261 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var isSymbol = __webpack_require__(152);
+
+	/**
+	 * Compares values to sort them in ascending order.
+	 *
+	 * @private
+	 * @param {*} value The value to compare.
+	 * @param {*} other The other value to compare.
+	 * @returns {number} Returns the sort order indicator for `value`.
+	 */
+	function compareAscending(value, other) {
+	  if (value !== other) {
+	    var valIsDefined = value !== undefined,
+	        valIsNull = value === null,
+	        valIsReflexive = value === value,
+	        valIsSymbol = isSymbol(value);
+
+	    var othIsDefined = other !== undefined,
+	        othIsNull = other === null,
+	        othIsReflexive = other === other,
+	        othIsSymbol = isSymbol(other);
+
+	    if ((!othIsNull && !othIsSymbol && !valIsSymbol && value > other) ||
+	        (valIsSymbol && othIsDefined && othIsReflexive && !othIsNull && !othIsSymbol) ||
+	        (valIsNull && othIsDefined && othIsReflexive) ||
+	        (!valIsDefined && othIsReflexive) ||
+	        !valIsReflexive) {
+	      return 1;
+	    }
+	    if ((!valIsNull && !valIsSymbol && !othIsSymbol && value < other) ||
+	        (othIsSymbol && valIsDefined && valIsReflexive && !valIsNull && !valIsSymbol) ||
+	        (othIsNull && valIsDefined && valIsReflexive) ||
+	        (!othIsDefined && valIsReflexive) ||
+	        !othIsReflexive) {
+	      return -1;
+	    }
+	  }
+	  return 0;
+	}
+
+	module.exports = compareAscending;
+
+
+/***/ }),
+/* 262 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var toString = __webpack_require__(156);
+
+	/** Used to generate unique IDs. */
+	var idCounter = 0;
+
+	/**
+	 * Generates a unique ID. If `prefix` is given, the ID is appended to it.
+	 *
+	 * @static
+	 * @since 0.1.0
+	 * @memberOf _
+	 * @category Util
+	 * @param {string} [prefix=''] The value to prefix the ID with.
+	 * @returns {string} Returns the unique ID.
+	 * @example
+	 *
+	 * _.uniqueId('contact_');
+	 * // => 'contact_104'
+	 *
+	 * _.uniqueId();
+	 * // => '105'
+	 */
+	function uniqueId(prefix) {
+	  var id = ++idCounter;
+	  return toString(prefix) + id;
+	}
+
+	module.exports = uniqueId;
+
+
+/***/ }),
+/* 263 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var assignValue = __webpack_require__(55),
+	    baseZipObject = __webpack_require__(264);
+
+	/**
+	 * This method is like `_.fromPairs` except that it accepts two arrays,
+	 * one of property identifiers and one of corresponding values.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.4.0
+	 * @category Array
+	 * @param {Array} [props=[]] The property identifiers.
+	 * @param {Array} [values=[]] The property values.
+	 * @returns {Object} Returns the new object.
+	 * @example
+	 *
+	 * _.zipObject(['a', 'b'], [1, 2]);
+	 * // => { 'a': 1, 'b': 2 }
+	 */
+	function zipObject(props, values) {
+	  return baseZipObject(props || [], values || [], assignValue);
+	}
+
+	module.exports = zipObject;
+
+
+/***/ }),
+/* 264 */
+/***/ (function(module, exports) {
+
+	/**
+	 * This base implementation of `_.zipObject` which assigns values using `assignFunc`.
+	 *
+	 * @private
+	 * @param {Array} props The property identifiers.
+	 * @param {Array} values The property values.
+	 * @param {Function} assignFunc The function to assign values.
+	 * @returns {Object} Returns the new object.
+	 */
+	function baseZipObject(props, values, assignFunc) {
+	  var index = -1,
+	      length = props.length,
+	      valsLength = values.length,
+	      result = {};
+
+	  while (++index < length) {
+	    var value = index < valsLength ? values[index] : undefined;
+	    assignFunc(result, props[index], value);
+	  }
+	  return result;
+	}
+
+	module.exports = baseZipObject;
+
+
+/***/ }),
+/* 265 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+	var greedyFAS = __webpack_require__(266);
+
+	module.exports = {
+	  run: run,
+	  undo: undo
+	};
+
+	function run(g) {
+	  var fas = (g.graph().acyclicer === "greedy"
+	    ? greedyFAS(g, weightFn(g))
+	    : dfsFAS(g));
+	  _.forEach(fas, function(e) {
+	    var label = g.edge(e);
+	    g.removeEdge(e);
+	    label.forwardName = e.name;
+	    label.reversed = true;
+	    g.setEdge(e.w, e.v, label, _.uniqueId("rev"));
+	  });
+
+	  function weightFn(g) {
+	    return function(e) {
+	      return g.edge(e).weight;
+	    };
+	  }
+	}
+
+	function dfsFAS(g) {
+	  var fas = [];
+	  var stack = {};
+	  var visited = {};
+
+	  function dfs(v) {
+	    if (_.has(visited, v)) {
+	      return;
+	    }
+	    visited[v] = true;
+	    stack[v] = true;
+	    _.forEach(g.outEdges(v), function(e) {
+	      if (_.has(stack, e.w)) {
+	        fas.push(e);
+	      } else {
+	        dfs(e.w);
+	      }
+	    });
+	    delete stack[v];
+	  }
+
+	  _.forEach(g.nodes(), dfs);
+	  return fas;
+	}
+
+	function undo(g) {
+	  _.forEach(g.edges(), function(e) {
+	    var label = g.edge(e);
+	    if (label.reversed) {
+	      g.removeEdge(e);
+
+	      var forwardName = label.forwardName;
+	      delete label.reversed;
+	      delete label.forwardName;
+	      g.setEdge(e.w, e.v, label, forwardName);
+	    }
+	  });
+	}
+
+
+/***/ }),
+/* 266 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+	var Graph = __webpack_require__(3).Graph;
+	var List = __webpack_require__(267);
+
+	/*
+	 * A greedy heuristic for finding a feedback arc set for a graph. A feedback
+	 * arc set is a set of edges that can be removed to make a graph acyclic.
+	 * The algorithm comes from: P. Eades, X. Lin, and W. F. Smyth, "A fast and
+	 * effective heuristic for the feedback arc set problem." This implementation
+	 * adjusts that from the paper to allow for weighted edges.
+	 */
+	module.exports = greedyFAS;
+
+	var DEFAULT_WEIGHT_FN = _.constant(1);
+
+	function greedyFAS(g, weightFn) {
+	  if (g.nodeCount() <= 1) {
+	    return [];
+	  }
+	  var state = buildState(g, weightFn || DEFAULT_WEIGHT_FN);
+	  var results = doGreedyFAS(state.graph, state.buckets, state.zeroIdx);
+
+	  // Expand multi-edges
+	  return _.flatten(_.map(results, function(e) {
+	    return g.outEdges(e.v, e.w);
+	  }), true);
+	}
+
+	function doGreedyFAS(g, buckets, zeroIdx) {
+	  var results = [];
+	  var sources = buckets[buckets.length - 1];
+	  var sinks = buckets[0];
+
+	  var entry;
+	  while (g.nodeCount()) {
+	    while ((entry = sinks.dequeue()))   { removeNode(g, buckets, zeroIdx, entry); }
+	    while ((entry = sources.dequeue())) { removeNode(g, buckets, zeroIdx, entry); }
+	    if (g.nodeCount()) {
+	      for (var i = buckets.length - 2; i > 0; --i) {
+	        entry = buckets[i].dequeue();
+	        if (entry) {
+	          results = results.concat(removeNode(g, buckets, zeroIdx, entry, true));
+	          break;
+	        }
+	      }
+	    }
+	  }
+
+	  return results;
+	}
+
+	function removeNode(g, buckets, zeroIdx, entry, collectPredecessors) {
+	  var results = collectPredecessors ? [] : undefined;
+
+	  _.forEach(g.inEdges(entry.v), function(edge) {
+	    var weight = g.edge(edge);
+	    var uEntry = g.node(edge.v);
+
+	    if (collectPredecessors) {
+	      results.push({ v: edge.v, w: edge.w });
+	    }
+
+	    uEntry.out -= weight;
+	    assignBucket(buckets, zeroIdx, uEntry);
+	  });
+
+	  _.forEach(g.outEdges(entry.v), function(edge) {
+	    var weight = g.edge(edge);
+	    var w = edge.w;
+	    var wEntry = g.node(w);
+	    wEntry["in"] -= weight;
+	    assignBucket(buckets, zeroIdx, wEntry);
+	  });
+
+	  g.removeNode(entry.v);
+
+	  return results;
+	}
+
+	function buildState(g, weightFn) {
+	  var fasGraph = new Graph();
+	  var maxIn = 0;
+	  var maxOut = 0;
+
+	  _.forEach(g.nodes(), function(v) {
+	    fasGraph.setNode(v, { v: v, "in": 0, out: 0 });
+	  });
+
+	  // Aggregate weights on nodes, but also sum the weights across multi-edges
+	  // into a single edge for the fasGraph.
+	  _.forEach(g.edges(), function(e) {
+	    var prevWeight = fasGraph.edge(e.v, e.w) || 0;
+	    var weight = weightFn(e);
+	    var edgeWeight = prevWeight + weight;
+	    fasGraph.setEdge(e.v, e.w, edgeWeight);
+	    maxOut = Math.max(maxOut, fasGraph.node(e.v).out += weight);
+	    maxIn  = Math.max(maxIn,  fasGraph.node(e.w)["in"]  += weight);
+	  });
+
+	  var buckets = _.range(maxOut + maxIn + 3).map(function() { return new List(); });
+	  var zeroIdx = maxIn + 1;
+
+	  _.forEach(fasGraph.nodes(), function(v) {
+	    assignBucket(buckets, zeroIdx, fasGraph.node(v));
+	  });
+
+	  return { graph: fasGraph, buckets: buckets, zeroIdx: zeroIdx };
+	}
+
+	function assignBucket(buckets, zeroIdx, entry) {
+	  if (!entry.out) {
+	    buckets[0].enqueue(entry);
+	  } else if (!entry["in"]) {
+	    buckets[buckets.length - 1].enqueue(entry);
+	  } else {
+	    buckets[entry.out - entry["in"] + zeroIdx].enqueue(entry);
+	  }
+	}
+
+
+/***/ }),
+/* 267 */
+/***/ (function(module, exports) {
+
+	/*
+	 * Simple doubly linked list implementation derived from Cormen, et al.,
+	 * "Introduction to Algorithms".
+	 */
+
+	module.exports = List;
+
+	function List() {
+	  var sentinel = {};
+	  sentinel._next = sentinel._prev = sentinel;
+	  this._sentinel = sentinel;
+	}
+
+	List.prototype.dequeue = function() {
+	  var sentinel = this._sentinel;
+	  var entry = sentinel._prev;
+	  if (entry !== sentinel) {
+	    unlink(entry);
+	    return entry;
+	  }
+	};
+
+	List.prototype.enqueue = function(entry) {
+	  var sentinel = this._sentinel;
+	  if (entry._prev && entry._next) {
+	    unlink(entry);
+	  }
+	  entry._next = sentinel._next;
+	  sentinel._next._prev = entry;
+	  sentinel._next = entry;
+	  entry._prev = sentinel;
+	};
+
+	List.prototype.toString = function() {
+	  var strs = [];
+	  var sentinel = this._sentinel;
+	  var curr = sentinel._prev;
+	  while (curr !== sentinel) {
+	    strs.push(JSON.stringify(curr, filterOutLinks));
+	    curr = curr._prev;
+	  }
+	  return "[" + strs.join(", ") + "]";
+	};
+
+	function unlink(entry) {
+	  entry._prev._next = entry._next;
+	  entry._next._prev = entry._prev;
+	  delete entry._next;
+	  delete entry._prev;
+	}
+
+	function filterOutLinks(k, v) {
+	  if (k !== "_next" && k !== "_prev") {
+	    return v;
+	  }
+	}
+
+
+/***/ }),
+/* 268 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+	var util = __webpack_require__(269);
+
+	module.exports = {
+	  run: run,
+	  undo: undo
+	};
+
+	/*
+	 * Breaks any long edges in the graph into short segments that span 1 layer
+	 * each. This operation is undoable with the denormalize function.
+	 *
+	 * Pre-conditions:
+	 *
+	 *    1. The input graph is a DAG.
+	 *    2. Each node in the graph has a "rank" property.
+	 *
+	 * Post-condition:
+	 *
+	 *    1. All edges in the graph have a length of 1.
+	 *    2. Dummy nodes are added where edges have been split into segments.
+	 *    3. The graph is augmented with a "dummyChains" attribute which contains
+	 *       the first dummy in each chain of dummy nodes produced.
+	 */
+	function run(g) {
+	  g.graph().dummyChains = [];
+	  _.forEach(g.edges(), function(edge) { normalizeEdge(g, edge); });
+	}
+
+	function normalizeEdge(g, e) {
+	  var v = e.v;
+	  var vRank = g.node(v).rank;
+	  var w = e.w;
+	  var wRank = g.node(w).rank;
+	  var name = e.name;
+	  var edgeLabel = g.edge(e);
+	  var labelRank = edgeLabel.labelRank;
+
+	  if (wRank === vRank + 1) return;
+
+	  g.removeEdge(e);
+
+	  var dummy, attrs, i;
+	  for (i = 0, ++vRank; vRank < wRank; ++i, ++vRank) {
+	    edgeLabel.points = [];
+	    attrs = {
+	      width: 0, height: 0,
+	      edgeLabel: edgeLabel, edgeObj: e,
+	      rank: vRank
+	    };
+	    dummy = util.addDummyNode(g, "edge", attrs, "_d");
+	    if (vRank === labelRank) {
+	      attrs.width = edgeLabel.width;
+	      attrs.height = edgeLabel.height;
+	      attrs.dummy = "edge-label";
+	      attrs.labelpos = edgeLabel.labelpos;
+	    }
+	    g.setEdge(v, dummy, { weight: edgeLabel.weight }, name);
+	    if (i === 0) {
+	      g.graph().dummyChains.push(dummy);
+	    }
+	    v = dummy;
+	  }
+
+	  g.setEdge(v, w, { weight: edgeLabel.weight }, name);
+	}
+
+	function undo(g) {
+	  _.forEach(g.graph().dummyChains, function(v) {
+	    var node = g.node(v);
+	    var origLabel = node.edgeLabel;
+	    var w;
+	    g.setEdge(node.edgeObj, origLabel);
+	    while (node.dummy) {
+	      w = g.successors(v)[0];
+	      g.removeNode(v);
+	      origLabel.points.push({ x: node.x, y: node.y });
+	      if (node.dummy === "edge-label") {
+	        origLabel.x = node.x;
+	        origLabel.y = node.y;
+	        origLabel.width = node.width;
+	        origLabel.height = node.height;
+	      }
+	      v = w;
+	      node = g.node(v);
+	    }
+	  });
+	}
+
+
+/***/ }),
+/* 269 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	/* eslint "no-console": off */
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+	var Graph = __webpack_require__(3).Graph;
+
+	module.exports = {
+	  addDummyNode: addDummyNode,
+	  simplify: simplify,
+	  asNonCompoundGraph: asNonCompoundGraph,
+	  successorWeights: successorWeights,
+	  predecessorWeights: predecessorWeights,
+	  intersectRect: intersectRect,
+	  buildLayerMatrix: buildLayerMatrix,
+	  normalizeRanks: normalizeRanks,
+	  removeEmptyRanks: removeEmptyRanks,
+	  addBorderNode: addBorderNode,
+	  maxRank: maxRank,
+	  partition: partition,
+	  time: time,
+	  notime: notime
+	};
+
+	/*
+	 * Adds a dummy node to the graph and return v.
+	 */
+	function addDummyNode(g, type, attrs, name) {
+	  var v;
+	  do {
+	    v = _.uniqueId(name);
+	  } while (g.hasNode(v));
+
+	  attrs.dummy = type;
+	  g.setNode(v, attrs);
+	  return v;
+	}
+
+	/*
+	 * Returns a new graph with only simple edges. Handles aggregation of data
+	 * associated with multi-edges.
+	 */
+	function simplify(g) {
+	  var simplified = new Graph().setGraph(g.graph());
+	  _.forEach(g.nodes(), function(v) { simplified.setNode(v, g.node(v)); });
+	  _.forEach(g.edges(), function(e) {
+	    var simpleLabel = simplified.edge(e.v, e.w) || { weight: 0, minlen: 1 };
+	    var label = g.edge(e);
+	    simplified.setEdge(e.v, e.w, {
+	      weight: simpleLabel.weight + label.weight,
+	      minlen: Math.max(simpleLabel.minlen, label.minlen)
+	    });
+	  });
+	  return simplified;
+	}
+
+	function asNonCompoundGraph(g) {
+	  var simplified = new Graph({ multigraph: g.isMultigraph() }).setGraph(g.graph());
+	  _.forEach(g.nodes(), function(v) {
+	    if (!g.children(v).length) {
+	      simplified.setNode(v, g.node(v));
+	    }
+	  });
+	  _.forEach(g.edges(), function(e) {
+	    simplified.setEdge(e, g.edge(e));
+	  });
+	  return simplified;
+	}
+
+	function successorWeights(g) {
+	  var weightMap = _.map(g.nodes(), function(v) {
+	    var sucs = {};
+	    _.forEach(g.outEdges(v), function(e) {
+	      sucs[e.w] = (sucs[e.w] || 0) + g.edge(e).weight;
+	    });
+	    return sucs;
+	  });
+	  return _.zipObject(g.nodes(), weightMap);
+	}
+
+	function predecessorWeights(g) {
+	  var weightMap = _.map(g.nodes(), function(v) {
+	    var preds = {};
+	    _.forEach(g.inEdges(v), function(e) {
+	      preds[e.v] = (preds[e.v] || 0) + g.edge(e).weight;
+	    });
+	    return preds;
+	  });
+	  return _.zipObject(g.nodes(), weightMap);
+	}
+
+	/*
+	 * Finds where a line starting at point ({x, y}) would intersect a rectangle
+	 * ({x, y, width, height}) if it were pointing at the rectangle's center.
+	 */
+	function intersectRect(rect, point) {
+	  var x = rect.x;
+	  var y = rect.y;
+
+	  // Rectangle intersection algorithm from:
+	  // http://math.stackexchange.com/questions/108113/find-edge-between-two-boxes
+	  var dx = point.x - x;
+	  var dy = point.y - y;
+	  var w = rect.width / 2;
+	  var h = rect.height / 2;
+
+	  if (!dx && !dy) {
+	    throw new Error("Not possible to find intersection inside of the rectangle");
+	  }
+
+	  var sx, sy;
+	  if (Math.abs(dy) * w > Math.abs(dx) * h) {
+	    // Intersection is top or bottom of rect.
+	    if (dy < 0) {
+	      h = -h;
+	    }
+	    sx = h * dx / dy;
+	    sy = h;
+	  } else {
+	    // Intersection is left or right of rect.
+	    if (dx < 0) {
+	      w = -w;
+	    }
+	    sx = w;
+	    sy = w * dy / dx;
+	  }
+
+	  return { x: x + sx, y: y + sy };
+	}
+
+	/*
+	 * Given a DAG with each node assigned "rank" and "order" properties, this
+	 * function will produce a matrix with the ids of each node.
+	 */
+	function buildLayerMatrix(g) {
+	  var layering = _.map(_.range(maxRank(g) + 1), function() { return []; });
+	  _.forEach(g.nodes(), function(v) {
+	    var node = g.node(v);
+	    var rank = node.rank;
+	    if (!_.isUndefined(rank)) {
+	      layering[rank][node.order] = v;
+	    }
+	  });
+	  return layering;
+	}
+
+	/*
+	 * Adjusts the ranks for all nodes in the graph such that all nodes v have
+	 * rank(v) >= 0 and at least one node w has rank(w) = 0.
+	 */
+	function normalizeRanks(g) {
+	  var min = _.min(_.map(g.nodes(), function(v) { return g.node(v).rank; }));
+	  _.forEach(g.nodes(), function(v) {
+	    var node = g.node(v);
+	    if (_.has(node, "rank")) {
+	      node.rank -= min;
+	    }
+	  });
+	}
+
+	function removeEmptyRanks(g) {
+	  // Ranks may not start at 0, so we need to offset them
+	  var offset = _.min(_.map(g.nodes(), function(v) { return g.node(v).rank; }));
+
+	  var layers = [];
+	  _.forEach(g.nodes(), function(v) {
+	    var rank = g.node(v).rank - offset;
+	    if (!layers[rank]) {
+	      layers[rank] = [];
+	    }
+	    layers[rank].push(v);
+	  });
+
+	  var delta = 0;
+	  var nodeRankFactor = g.graph().nodeRankFactor;
+	  _.forEach(layers, function(vs, i) {
+	    if (_.isUndefined(vs) && i % nodeRankFactor !== 0) {
+	      --delta;
+	    } else if (delta) {
+	      _.forEach(vs, function(v) { g.node(v).rank += delta; });
+	    }
+	  });
+	}
+
+	function addBorderNode(g, prefix, rank, order) {
+	  var node = {
+	    width: 0,
+	    height: 0
+	  };
+	  if (arguments.length >= 4) {
+	    node.rank = rank;
+	    node.order = order;
+	  }
+	  return addDummyNode(g, "border", node, prefix);
+	}
+
+	function maxRank(g) {
+	  return _.max(_.map(g.nodes(), function(v) {
+	    var rank = g.node(v).rank;
+	    if (!_.isUndefined(rank)) {
+	      return rank;
+	    }
+	  }));
+	}
+
+	/*
+	 * Partition a collection into two groups: `lhs` and `rhs`. If the supplied
+	 * function returns true for an entry it goes into `lhs`. Otherwise it goes
+	 * into `rhs.
+	 */
+	function partition(collection, fn) {
+	  var result = { lhs: [], rhs: [] };
+	  _.forEach(collection, function(value) {
+	    if (fn(value)) {
+	      result.lhs.push(value);
+	    } else {
+	      result.rhs.push(value);
+	    }
+	  });
+	  return result;
+	}
+
+	/*
+	 * Returns a new function that wraps `fn` with a timer. The wrapper logs the
+	 * time it takes to execute the function.
+	 */
+	function time(name, fn) {
+	  var start = _.now();
+	  try {
+	    return fn();
+	  } finally {
+	    console.log(name + " time: " + (_.now() - start) + "ms");
+	  }
+	}
+
+	function notime(name, fn) {
+	  return fn();
+	}
+
+
+/***/ }),
+/* 270 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var rankUtil = __webpack_require__(271);
+	var longestPath = rankUtil.longestPath;
+	var feasibleTree = __webpack_require__(272);
+	var networkSimplex = __webpack_require__(273);
+
+	module.exports = rank;
+
+	/*
+	 * Assigns a rank to each node in the input graph that respects the "minlen"
+	 * constraint specified on edges between nodes.
+	 *
+	 * This basic structure is derived from Gansner, et al., "A Technique for
+	 * Drawing Directed Graphs."
+	 *
+	 * Pre-conditions:
+	 *
+	 *    1. Graph must be a connected DAG
+	 *    2. Graph nodes must be objects
+	 *    3. Graph edges must have "weight" and "minlen" attributes
+	 *
+	 * Post-conditions:
+	 *
+	 *    1. Graph nodes will have a "rank" attribute based on the results of the
+	 *       algorithm. Ranks can start at any index (including negative), we'll
+	 *       fix them up later.
+	 */
+	function rank(g) {
+	  switch(g.graph().ranker) {
+	  case "network-simplex": networkSimplexRanker(g); break;
+	  case "tight-tree": tightTreeRanker(g); break;
+	  case "longest-path": longestPathRanker(g); break;
+	  default: networkSimplexRanker(g);
+	  }
+	}
+
+	// A fast and simple ranker, but results are far from optimal.
+	var longestPathRanker = longestPath;
+
+	function tightTreeRanker(g) {
+	  longestPath(g);
+	  feasibleTree(g);
+	}
+
+	function networkSimplexRanker(g) {
+	  networkSimplex(g);
+	}
+
+
+/***/ }),
+/* 271 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+
+	module.exports = {
+	  longestPath: longestPath,
+	  slack: slack
+	};
+
+	/*
+	 * Initializes ranks for the input graph using the longest path algorithm. This
+	 * algorithm scales well and is fast in practice, it yields rather poor
+	 * solutions. Nodes are pushed to the lowest layer possible, leaving the bottom
+	 * ranks wide and leaving edges longer than necessary. However, due to its
+	 * speed, this algorithm is good for getting an initial ranking that can be fed
+	 * into other algorithms.
+	 *
+	 * This algorithm does not normalize layers because it will be used by other
+	 * algorithms in most cases. If using this algorithm directly, be sure to
+	 * run normalize at the end.
+	 *
+	 * Pre-conditions:
+	 *
+	 *    1. Input graph is a DAG.
+	 *    2. Input graph node labels can be assigned properties.
+	 *
+	 * Post-conditions:
+	 *
+	 *    1. Each node will be assign an (unnormalized) "rank" property.
+	 */
+	function longestPath(g) {
+	  var visited = {};
+
+	  function dfs(v) {
+	    var label = g.node(v);
+	    if (_.has(visited, v)) {
+	      return label.rank;
+	    }
+	    visited[v] = true;
+
+	    var rank = _.min(_.map(g.outEdges(v), function(e) {
+	      return dfs(e.w) - g.edge(e).minlen;
+	    }));
+
+	    if (rank === Number.POSITIVE_INFINITY || // return value of _.map([]) for Lodash 3
+	        rank === undefined || // return value of _.map([]) for Lodash 4
+	        rank === null) { // return value of _.map([null])
+	      rank = 0;
+	    }
+
+	    return (label.rank = rank);
+	  }
+
+	  _.forEach(g.sources(), dfs);
+	}
+
+	/*
+	 * Returns the amount of slack for the given edge. The slack is defined as the
+	 * difference between the length of the edge and its minimum length.
+	 */
+	function slack(g, e) {
+	  return g.node(e.w).rank - g.node(e.v).rank - g.edge(e).minlen;
+	}
+
+
+/***/ }),
+/* 272 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+	var Graph = __webpack_require__(3).Graph;
+	var slack = __webpack_require__(271).slack;
+
+	module.exports = feasibleTree;
+
+	/*
+	 * Constructs a spanning tree with tight edges and adjusted the input node's
+	 * ranks to achieve this. A tight edge is one that is has a length that matches
+	 * its "minlen" attribute.
+	 *
+	 * The basic structure for this function is derived from Gansner, et al., "A
+	 * Technique for Drawing Directed Graphs."
+	 *
+	 * Pre-conditions:
+	 *
+	 *    1. Graph must be a DAG.
+	 *    2. Graph must be connected.
+	 *    3. Graph must have at least one node.
+	 *    5. Graph nodes must have been previously assigned a "rank" property that
+	 *       respects the "minlen" property of incident edges.
+	 *    6. Graph edges must have a "minlen" property.
+	 *
+	 * Post-conditions:
+	 *
+	 *    - Graph nodes will have their rank adjusted to ensure that all edges are
+	 *      tight.
+	 *
+	 * Returns a tree (undirected graph) that is constructed using only "tight"
+	 * edges.
+	 */
+	function feasibleTree(g) {
+	  var t = new Graph({ directed: false });
+
+	  // Choose arbitrary node from which to start our tree
+	  var start = g.nodes()[0];
+	  var size = g.nodeCount();
+	  t.setNode(start, {});
+
+	  var edge, delta;
+	  while (tightTree(t, g) < size) {
+	    edge = findMinSlackEdge(t, g);
+	    delta = t.hasNode(edge.v) ? slack(g, edge) : -slack(g, edge);
+	    shiftRanks(t, g, delta);
+	  }
+
+	  return t;
+	}
+
+	/*
+	 * Finds a maximal tree of tight edges and returns the number of nodes in the
+	 * tree.
+	 */
+	function tightTree(t, g) {
+	  function dfs(v) {
+	    _.forEach(g.nodeEdges(v), function(e) {
+	      var edgeV = e.v,
+	        w = (v === edgeV) ? e.w : edgeV;
+	      if (!t.hasNode(w) && !slack(g, e)) {
+	        t.setNode(w, {});
+	        t.setEdge(v, w, {});
+	        dfs(w);
+	      }
+	    });
+	  }
+
+	  _.forEach(t.nodes(), dfs);
+	  return t.nodeCount();
+	}
+
+	/*
+	 * Finds the edge with the smallest slack that is incident on tree and returns
+	 * it.
+	 */
+	function findMinSlackEdge(t, g) {
+	  return _.minBy(g.edges(), function(e) {
+	    if (t.hasNode(e.v) !== t.hasNode(e.w)) {
+	      return slack(g, e);
+	    }
+	  });
+	}
+
+	function shiftRanks(t, g, delta) {
+	  _.forEach(t.nodes(), function(v) {
+	    g.node(v).rank += delta;
+	  });
+	}
+
+
+/***/ }),
+/* 273 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+	var feasibleTree = __webpack_require__(272);
+	var slack = __webpack_require__(271).slack;
+	var initRank = __webpack_require__(271).longestPath;
+	var preorder = __webpack_require__(3).alg.preorder;
+	var postorder = __webpack_require__(3).alg.postorder;
+	var simplify = __webpack_require__(269).simplify;
+
+	module.exports = networkSimplex;
+
+	// Expose some internals for testing purposes
+	networkSimplex.initLowLimValues = initLowLimValues;
+	networkSimplex.initCutValues = initCutValues;
+	networkSimplex.calcCutValue = calcCutValue;
+	networkSimplex.leaveEdge = leaveEdge;
+	networkSimplex.enterEdge = enterEdge;
+	networkSimplex.exchangeEdges = exchangeEdges;
+
+	/*
+	 * The network simplex algorithm assigns ranks to each node in the input graph
+	 * and iteratively improves the ranking to reduce the length of edges.
+	 *
+	 * Preconditions:
+	 *
+	 *    1. The input graph must be a DAG.
+	 *    2. All nodes in the graph must have an object value.
+	 *    3. All edges in the graph must have "minlen" and "weight" attributes.
+	 *
+	 * Postconditions:
+	 *
+	 *    1. All nodes in the graph will have an assigned "rank" attribute that has
+	 *       been optimized by the network simplex algorithm. Ranks start at 0.
+	 *
+	 *
+	 * A rough sketch of the algorithm is as follows:
+	 *
+	 *    1. Assign initial ranks to each node. We use the longest path algorithm,
+	 *       which assigns ranks to the lowest position possible. In general this
+	 *       leads to very wide bottom ranks and unnecessarily long edges.
+	 *    2. Construct a feasible tight tree. A tight tree is one such that all
+	 *       edges in the tree have no slack (difference between length of edge
+	 *       and minlen for the edge). This by itself greatly improves the assigned
+	 *       rankings by shorting edges.
+	 *    3. Iteratively find edges that have negative cut values. Generally a
+	 *       negative cut value indicates that the edge could be removed and a new
+	 *       tree edge could be added to produce a more compact graph.
+	 *
+	 * Much of the algorithms here are derived from Gansner, et al., "A Technique
+	 * for Drawing Directed Graphs." The structure of the file roughly follows the
+	 * structure of the overall algorithm.
+	 */
+	function networkSimplex(g) {
+	  g = simplify(g);
+	  initRank(g);
+	  var t = feasibleTree(g);
+	  initLowLimValues(t);
+	  initCutValues(t, g);
+
+	  var e, f;
+	  while ((e = leaveEdge(t))) {
+	    f = enterEdge(t, g, e);
+	    exchangeEdges(t, g, e, f);
+	  }
+	}
+
+	/*
+	 * Initializes cut values for all edges in the tree.
+	 */
+	function initCutValues(t, g) {
+	  var vs = postorder(t, t.nodes());
+	  vs = vs.slice(0, vs.length - 1);
+	  _.forEach(vs, function(v) {
+	    assignCutValue(t, g, v);
+	  });
+	}
+
+	function assignCutValue(t, g, child) {
+	  var childLab = t.node(child);
+	  var parent = childLab.parent;
+	  t.edge(child, parent).cutvalue = calcCutValue(t, g, child);
+	}
+
+	/*
+	 * Given the tight tree, its graph, and a child in the graph calculate and
+	 * return the cut value for the edge between the child and its parent.
+	 */
+	function calcCutValue(t, g, child) {
+	  var childLab = t.node(child);
+	  var parent = childLab.parent;
+	  // True if the child is on the tail end of the edge in the directed graph
+	  var childIsTail = true;
+	  // The graph's view of the tree edge we're inspecting
+	  var graphEdge = g.edge(child, parent);
+	  // The accumulated cut value for the edge between this node and its parent
+	  var cutValue = 0;
+
+	  if (!graphEdge) {
+	    childIsTail = false;
+	    graphEdge = g.edge(parent, child);
+	  }
+
+	  cutValue = graphEdge.weight;
+
+	  _.forEach(g.nodeEdges(child), function(e) {
+	    var isOutEdge = e.v === child,
+	      other = isOutEdge ? e.w : e.v;
+
+	    if (other !== parent) {
+	      var pointsToHead = isOutEdge === childIsTail,
+	        otherWeight = g.edge(e).weight;
+
+	      cutValue += pointsToHead ? otherWeight : -otherWeight;
+	      if (isTreeEdge(t, child, other)) {
+	        var otherCutValue = t.edge(child, other).cutvalue;
+	        cutValue += pointsToHead ? -otherCutValue : otherCutValue;
+	      }
+	    }
+	  });
+
+	  return cutValue;
+	}
+
+	function initLowLimValues(tree, root) {
+	  if (arguments.length < 2) {
+	    root = tree.nodes()[0];
+	  }
+	  dfsAssignLowLim(tree, {}, 1, root);
+	}
+
+	function dfsAssignLowLim(tree, visited, nextLim, v, parent) {
+	  var low = nextLim;
+	  var label = tree.node(v);
+
+	  visited[v] = true;
+	  _.forEach(tree.neighbors(v), function(w) {
+	    if (!_.has(visited, w)) {
+	      nextLim = dfsAssignLowLim(tree, visited, nextLim, w, v);
+	    }
+	  });
+
+	  label.low = low;
+	  label.lim = nextLim++;
+	  if (parent) {
+	    label.parent = parent;
+	  } else {
+	    // TODO should be able to remove this when we incrementally update low lim
+	    delete label.parent;
+	  }
+
+	  return nextLim;
+	}
+
+	function leaveEdge(tree) {
+	  return _.find(tree.edges(), function(e) {
+	    return tree.edge(e).cutvalue < 0;
+	  });
+	}
+
+	function enterEdge(t, g, edge) {
+	  var v = edge.v;
+	  var w = edge.w;
+
+	  // For the rest of this function we assume that v is the tail and w is the
+	  // head, so if we don't have this edge in the graph we should flip it to
+	  // match the correct orientation.
+	  if (!g.hasEdge(v, w)) {
+	    v = edge.w;
+	    w = edge.v;
+	  }
+
+	  var vLabel = t.node(v);
+	  var wLabel = t.node(w);
+	  var tailLabel = vLabel;
+	  var flip = false;
+
+	  // If the root is in the tail of the edge then we need to flip the logic that
+	  // checks for the head and tail nodes in the candidates function below.
+	  if (vLabel.lim > wLabel.lim) {
+	    tailLabel = wLabel;
+	    flip = true;
+	  }
+
+	  var candidates = _.filter(g.edges(), function(edge) {
+	    return flip === isDescendant(t, t.node(edge.v), tailLabel) &&
+	           flip !== isDescendant(t, t.node(edge.w), tailLabel);
+	  });
+
+	  return _.minBy(candidates, function(edge) { return slack(g, edge); });
+	}
+
+	function exchangeEdges(t, g, e, f) {
+	  var v = e.v;
+	  var w = e.w;
+	  t.removeEdge(v, w);
+	  t.setEdge(f.v, f.w, {});
+	  initLowLimValues(t);
+	  initCutValues(t, g);
+	  updateRanks(t, g);
+	}
+
+	function updateRanks(t, g) {
+	  var root = _.find(t.nodes(), function(v) { return !g.node(v).parent; });
+	  var vs = preorder(t, root);
+	  vs = vs.slice(1);
+	  _.forEach(vs, function(v) {
+	    var parent = t.node(v).parent,
+	      edge = g.edge(v, parent),
+	      flipped = false;
+
+	    if (!edge) {
+	      edge = g.edge(parent, v);
+	      flipped = true;
+	    }
+
+	    g.node(v).rank = g.node(parent).rank + (flipped ? edge.minlen : -edge.minlen);
+	  });
+	}
+
+	/*
+	 * Returns true if the edge is in the tree.
+	 */
+	function isTreeEdge(tree, u, v) {
+	  return tree.hasEdge(u, v);
+	}
+
+	/*
+	 * Returns true if the specified node is descendant of the root node per the
+	 * assigned low and lim attributes in the tree.
+	 */
+	function isDescendant(tree, vLabel, rootLabel) {
+	  return rootLabel.low <= vLabel.lim && vLabel.lim <= rootLabel.lim;
+	}
+
+
+/***/ }),
+/* 274 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+
+	module.exports = parentDummyChains;
+
+	function parentDummyChains(g) {
+	  var postorderNums = postorder(g);
+
+	  _.forEach(g.graph().dummyChains, function(v) {
+	    var node = g.node(v);
+	    var edgeObj = node.edgeObj;
+	    var pathData = findPath(g, postorderNums, edgeObj.v, edgeObj.w);
+	    var path = pathData.path;
+	    var lca = pathData.lca;
+	    var pathIdx = 0;
+	    var pathV = path[pathIdx];
+	    var ascending = true;
+
+	    while (v !== edgeObj.w) {
+	      node = g.node(v);
+
+	      if (ascending) {
+	        while ((pathV = path[pathIdx]) !== lca &&
+	               g.node(pathV).maxRank < node.rank) {
+	          pathIdx++;
+	        }
+
+	        if (pathV === lca) {
+	          ascending = false;
+	        }
+	      }
+
+	      if (!ascending) {
+	        while (pathIdx < path.length - 1 &&
+	               g.node(pathV = path[pathIdx + 1]).minRank <= node.rank) {
+	          pathIdx++;
+	        }
+	        pathV = path[pathIdx];
+	      }
+
+	      g.setParent(v, pathV);
+	      v = g.successors(v)[0];
+	    }
+	  });
+	}
+
+	// Find a path from v to w through the lowest common ancestor (LCA). Return the
+	// full path and the LCA.
+	function findPath(g, postorderNums, v, w) {
+	  var vPath = [];
+	  var wPath = [];
+	  var low = Math.min(postorderNums[v].low, postorderNums[w].low);
+	  var lim = Math.max(postorderNums[v].lim, postorderNums[w].lim);
+	  var parent;
+	  var lca;
+
+	  // Traverse up from v to find the LCA
+	  parent = v;
+	  do {
+	    parent = g.parent(parent);
+	    vPath.push(parent);
+	  } while (parent &&
+	           (postorderNums[parent].low > low || lim > postorderNums[parent].lim));
+	  lca = parent;
+
+	  // Traverse from w to LCA
+	  parent = w;
+	  while ((parent = g.parent(parent)) !== lca) {
+	    wPath.push(parent);
+	  }
+
+	  return { path: vPath.concat(wPath.reverse()), lca: lca };
+	}
+
+	function postorder(g) {
+	  var result = {};
+	  var lim = 0;
+
+	  function dfs(v) {
+	    var low = lim;
+	    _.forEach(g.children(v), dfs);
+	    result[v] = { low: low, lim: lim++ };
+	  }
+	  _.forEach(g.children(), dfs);
+
+	  return result;
+	}
+
+
+/***/ }),
+/* 275 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+	var util = __webpack_require__(269);
+
+	module.exports = {
+	  run: run,
+	  cleanup: cleanup
+	};
+
+	/*
+	 * A nesting graph creates dummy nodes for the tops and bottoms of subgraphs,
+	 * adds appropriate edges to ensure that all cluster nodes are placed between
+	 * these boundries, and ensures that the graph is connected.
+	 *
+	 * In addition we ensure, through the use of the minlen property, that nodes
+	 * and subgraph border nodes to not end up on the same rank.
+	 *
+	 * Preconditions:
+	 *
+	 *    1. Input graph is a DAG
+	 *    2. Nodes in the input graph has a minlen attribute
+	 *
+	 * Postconditions:
+	 *
+	 *    1. Input graph is connected.
+	 *    2. Dummy nodes are added for the tops and bottoms of subgraphs.
+	 *    3. The minlen attribute for nodes is adjusted to ensure nodes do not
+	 *       get placed on the same rank as subgraph border nodes.
+	 *
+	 * The nesting graph idea comes from Sander, "Layout of Compound Directed
+	 * Graphs."
+	 */
+	function run(g) {
+	  var root = util.addDummyNode(g, "root", {}, "_root");
+	  var depths = treeDepths(g);
+	  var height = _.max(_.values(depths)) - 1; // Note: depths is an Object not an array
+	  var nodeSep = 2 * height + 1;
+
+	  g.graph().nestingRoot = root;
+
+	  // Multiply minlen by nodeSep to align nodes on non-border ranks.
+	  _.forEach(g.edges(), function(e) { g.edge(e).minlen *= nodeSep; });
+
+	  // Calculate a weight that is sufficient to keep subgraphs vertically compact
+	  var weight = sumWeights(g) + 1;
+
+	  // Create border nodes and link them up
+	  _.forEach(g.children(), function(child) {
+	    dfs(g, root, nodeSep, weight, height, depths, child);
+	  });
+
+	  // Save the multiplier for node layers for later removal of empty border
+	  // layers.
+	  g.graph().nodeRankFactor = nodeSep;
+	}
+
+	function dfs(g, root, nodeSep, weight, height, depths, v) {
+	  var children = g.children(v);
+	  if (!children.length) {
+	    if (v !== root) {
+	      g.setEdge(root, v, { weight: 0, minlen: nodeSep });
+	    }
+	    return;
+	  }
+
+	  var top = util.addBorderNode(g, "_bt");
+	  var bottom = util.addBorderNode(g, "_bb");
+	  var label = g.node(v);
+
+	  g.setParent(top, v);
+	  label.borderTop = top;
+	  g.setParent(bottom, v);
+	  label.borderBottom = bottom;
+
+	  _.forEach(children, function(child) {
+	    dfs(g, root, nodeSep, weight, height, depths, child);
+
+	    var childNode = g.node(child);
+	    var childTop = childNode.borderTop ? childNode.borderTop : child;
+	    var childBottom = childNode.borderBottom ? childNode.borderBottom : child;
+	    var thisWeight = childNode.borderTop ? weight : 2 * weight;
+	    var minlen = childTop !== childBottom ? 1 : height - depths[v] + 1;
+
+	    g.setEdge(top, childTop, {
+	      weight: thisWeight,
+	      minlen: minlen,
+	      nestingEdge: true
+	    });
+
+	    g.setEdge(childBottom, bottom, {
+	      weight: thisWeight,
+	      minlen: minlen,
+	      nestingEdge: true
+	    });
+	  });
+
+	  if (!g.parent(v)) {
+	    g.setEdge(root, top, { weight: 0, minlen: height + depths[v] });
+	  }
+	}
+
+	function treeDepths(g) {
+	  var depths = {};
+	  function dfs(v, depth) {
+	    var children = g.children(v);
+	    if (children && children.length) {
+	      _.forEach(children, function(child) {
+	        dfs(child, depth + 1);
+	      });
+	    }
+	    depths[v] = depth;
+	  }
+	  _.forEach(g.children(), function(v) { dfs(v, 1); });
+	  return depths;
+	}
+
+	function sumWeights(g) {
+	  return _.reduce(g.edges(), function(acc, e) {
+	    return acc + g.edge(e).weight;
+	  }, 0);
+	}
+
+	function cleanup(g) {
+	  var graphLabel = g.graph();
+	  g.removeNode(graphLabel.nestingRoot);
+	  delete graphLabel.nestingRoot;
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    if (edge.nestingEdge) {
+	      g.removeEdge(e);
+	    }
+	  });
+	}
+
+
+/***/ }),
+/* 276 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+	var util = __webpack_require__(269);
+
+	module.exports = addBorderSegments;
+
+	function addBorderSegments(g) {
+	  function dfs(v) {
+	    var children = g.children(v);
+	    var node = g.node(v);
+	    if (children.length) {
+	      _.forEach(children, dfs);
+	    }
+
+	    if (_.has(node, "minRank")) {
+	      node.borderLeft = [];
+	      node.borderRight = [];
+	      for (var rank = node.minRank, maxRank = node.maxRank + 1;
+	        rank < maxRank;
+	        ++rank) {
+	        addBorderNode(g, "borderLeft", "_bl", v, node, rank);
+	        addBorderNode(g, "borderRight", "_br", v, node, rank);
+	      }
+	    }
+	  }
+
+	  _.forEach(g.children(), dfs);
+	}
+
+	function addBorderNode(g, prop, prefix, sg, sgNode, rank) {
+	  var label = { width: 0, height: 0, rank: rank, borderType: prop };
+	  var prev = sgNode[prop][rank - 1];
+	  var curr = util.addDummyNode(g, "border", label, prefix);
+	  sgNode[prop][rank] = curr;
+	  g.setParent(curr, sg);
+	  if (prev) {
+	    g.setEdge(prev, curr, { weight: 1 });
+	  }
+	}
+
+
+/***/ }),
+/* 277 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+
+	module.exports = {
+	  adjust: adjust,
+	  undo: undo
+	};
+
+	function adjust(g) {
+	  var rankDir = g.graph().rankdir.toLowerCase();
+	  if (rankDir === "lr" || rankDir === "rl") {
+	    swapWidthHeight(g);
+	  }
+	}
+
+	function undo(g) {
+	  var rankDir = g.graph().rankdir.toLowerCase();
+	  if (rankDir === "bt" || rankDir === "rl") {
+	    reverseY(g);
+	  }
+
+	  if (rankDir === "lr" || rankDir === "rl") {
+	    swapXY(g);
+	    swapWidthHeight(g);
+	  }
+	}
+
+	function swapWidthHeight(g) {
+	  _.forEach(g.nodes(), function(v) { swapWidthHeightOne(g.node(v)); });
+	  _.forEach(g.edges(), function(e) { swapWidthHeightOne(g.edge(e)); });
+	}
+
+	function swapWidthHeightOne(attrs) {
+	  var w = attrs.width;
+	  attrs.width = attrs.height;
+	  attrs.height = w;
+	}
+
+	function reverseY(g) {
+	  _.forEach(g.nodes(), function(v) { reverseYOne(g.node(v)); });
+
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    _.forEach(edge.points, reverseYOne);
+	    if (_.has(edge, "y")) {
+	      reverseYOne(edge);
+	    }
+	  });
+	}
+
+	function reverseYOne(attrs) {
+	  attrs.y = -attrs.y;
+	}
+
+	function swapXY(g) {
+	  _.forEach(g.nodes(), function(v) { swapXYOne(g.node(v)); });
+
+	  _.forEach(g.edges(), function(e) {
+	    var edge = g.edge(e);
+	    _.forEach(edge.points, swapXYOne);
+	    if (_.has(edge, "x")) {
+	      swapXYOne(edge);
+	    }
+	  });
+	}
+
+	function swapXYOne(attrs) {
+	  var x = attrs.x;
+	  attrs.x = attrs.y;
+	  attrs.y = x;
+	}
+
+
+/***/ }),
+/* 278 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+	var initOrder = __webpack_require__(279);
+	var crossCount = __webpack_require__(280);
+	var sortSubgraph = __webpack_require__(281);
+	var buildLayerGraph = __webpack_require__(285);
+	var addSubgraphConstraints = __webpack_require__(286);
+	var Graph = __webpack_require__(3).Graph;
+	var util = __webpack_require__(269);
+
+	module.exports = order;
+
+	/*
+	 * Applies heuristics to minimize edge crossings in the graph and sets the best
+	 * order solution as an order attribute on each node.
+	 *
+	 * Pre-conditions:
+	 *
+	 *    1. Graph must be DAG
+	 *    2. Graph nodes must be objects with a "rank" attribute
+	 *    3. Graph edges must have the "weight" attribute
+	 *
+	 * Post-conditions:
+	 *
+	 *    1. Graph nodes will have an "order" attribute based on the results of the
+	 *       algorithm.
+	 */
+	function order(g) {
+	  var maxRank = util.maxRank(g),
+	    downLayerGraphs = buildLayerGraphs(g, _.range(1, maxRank + 1), "inEdges"),
+	    upLayerGraphs = buildLayerGraphs(g, _.range(maxRank - 1, -1, -1), "outEdges");
+
+	  var layering = initOrder(g);
+	  assignOrder(g, layering);
+
+	  var bestCC = Number.POSITIVE_INFINITY,
+	    best;
+
+	  for (var i = 0, lastBest = 0; lastBest < 4; ++i, ++lastBest) {
+	    sweepLayerGraphs(i % 2 ? downLayerGraphs : upLayerGraphs, i % 4 >= 2);
+
+	    layering = util.buildLayerMatrix(g);
+	    var cc = crossCount(g, layering);
+	    if (cc < bestCC) {
+	      lastBest = 0;
+	      best = _.cloneDeep(layering);
+	      bestCC = cc;
+	    }
+	  }
+
+	  assignOrder(g, best);
+	}
+
+	function buildLayerGraphs(g, ranks, relationship) {
+	  return _.map(ranks, function(rank) {
+	    return buildLayerGraph(g, rank, relationship);
+	  });
+	}
+
+	function sweepLayerGraphs(layerGraphs, biasRight) {
+	  var cg = new Graph();
+	  _.forEach(layerGraphs, function(lg) {
+	    var root = lg.graph().root;
+	    var sorted = sortSubgraph(lg, root, cg, biasRight);
+	    _.forEach(sorted.vs, function(v, i) {
+	      lg.node(v).order = i;
+	    });
+	    addSubgraphConstraints(lg, cg, sorted.vs);
+	  });
+	}
+
+	function assignOrder(g, layering) {
+	  _.forEach(layering, function(layer) {
+	    _.forEach(layer, function(v, i) {
+	      g.node(v).order = i;
+	    });
+	  });
+	}
+
+
+/***/ }),
+/* 279 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+
+	module.exports = initOrder;
+
+	/*
+	 * Assigns an initial order value for each node by performing a DFS search
+	 * starting from nodes in the first rank. Nodes are assigned an order in their
+	 * rank as they are first visited.
+	 *
+	 * This approach comes from Gansner, et al., "A Technique for Drawing Directed
+	 * Graphs."
+	 *
+	 * Returns a layering matrix with an array per layer and each layer sorted by
+	 * the order of its nodes.
+	 */
+	function initOrder(g) {
+	  var visited = {};
+	  var simpleNodes = _.filter(g.nodes(), function(v) {
+	    return !g.children(v).length;
+	  });
+	  var maxRank = _.max(_.map(simpleNodes, function(v) { return g.node(v).rank; }));
+	  var layers = _.map(_.range(maxRank + 1), function() { return []; });
+
+	  function dfs(v) {
+	    if (_.has(visited, v)) return;
+	    visited[v] = true;
+	    var node = g.node(v);
+	    layers[node.rank].push(v);
+	    _.forEach(g.successors(v), dfs);
+	  }
+
+	  var orderedVs = _.sortBy(simpleNodes, function(v) { return g.node(v).rank; });
+	  _.forEach(orderedVs, dfs);
+
+	  return layers;
+	}
+
+
+/***/ }),
+/* 280 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+
+	module.exports = crossCount;
+
+	/*
+	 * A function that takes a layering (an array of layers, each with an array of
+	 * ordererd nodes) and a graph and returns a weighted crossing count.
+	 *
+	 * Pre-conditions:
+	 *
+	 *    1. Input graph must be simple (not a multigraph), directed, and include
+	 *       only simple edges.
+	 *    2. Edges in the input graph must have assigned weights.
+	 *
+	 * Post-conditions:
+	 *
+	 *    1. The graph and layering matrix are left unchanged.
+	 *
+	 * This algorithm is derived from Barth, et al., "Bilayer Cross Counting."
+	 */
+	function crossCount(g, layering) {
+	  var cc = 0;
+	  for (var i = 1; i < layering.length; ++i) {
+	    cc += twoLayerCrossCount(g, layering[i-1], layering[i]);
+	  }
+	  return cc;
+	}
+
+	function twoLayerCrossCount(g, northLayer, southLayer) {
+	  // Sort all of the edges between the north and south layers by their position
+	  // in the north layer and then the south. Map these edges to the position of
+	  // their head in the south layer.
+	  var southPos = _.zipObject(southLayer,
+	    _.map(southLayer, function (v, i) { return i; }));
+	  var southEntries = _.flatten(_.map(northLayer, function(v) {
+	    return _.sortBy(_.map(g.outEdges(v), function(e) {
+	      return { pos: southPos[e.w], weight: g.edge(e).weight };
+	    }), "pos");
+	  }), true);
+
+	  // Build the accumulator tree
+	  var firstIndex = 1;
+	  while (firstIndex < southLayer.length) firstIndex <<= 1;
+	  var treeSize = 2 * firstIndex - 1;
+	  firstIndex -= 1;
+	  var tree = _.map(new Array(treeSize), function() { return 0; });
+
+	  // Calculate the weighted crossings
+	  var cc = 0;
+	  _.forEach(southEntries.forEach(function(entry) {
+	    var index = entry.pos + firstIndex;
+	    tree[index] += entry.weight;
+	    var weightSum = 0;
+	    while (index > 0) {
+	      if (index % 2) {
+	        weightSum += tree[index + 1];
+	      }
+	      index = (index - 1) >> 1;
+	      tree[index] += entry.weight;
+	    }
+	    cc += entry.weight * weightSum;
+	  }));
+
+	  return cc;
+	}
+
+
+/***/ }),
+/* 281 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+	var barycenter = __webpack_require__(282);
+	var resolveConflicts = __webpack_require__(283);
+	var sort = __webpack_require__(284);
+
+	module.exports = sortSubgraph;
+
+	function sortSubgraph(g, v, cg, biasRight) {
+	  var movable = g.children(v);
+	  var node = g.node(v);
+	  var bl = node ? node.borderLeft : undefined;
+	  var br = node ? node.borderRight: undefined;
+	  var subgraphs = {};
+
+	  if (bl) {
+	    movable = _.filter(movable, function(w) {
+	      return w !== bl && w !== br;
+	    });
+	  }
+
+	  var barycenters = barycenter(g, movable);
+	  _.forEach(barycenters, function(entry) {
+	    if (g.children(entry.v).length) {
+	      var subgraphResult = sortSubgraph(g, entry.v, cg, biasRight);
+	      subgraphs[entry.v] = subgraphResult;
+	      if (_.has(subgraphResult, "barycenter")) {
+	        mergeBarycenters(entry, subgraphResult);
+	      }
+	    }
+	  });
+
+	  var entries = resolveConflicts(barycenters, cg);
+	  expandSubgraphs(entries, subgraphs);
+
+	  var result = sort(entries, biasRight);
+
+	  if (bl) {
+	    result.vs = _.flatten([bl, result.vs, br], true);
+	    if (g.predecessors(bl).length) {
+	      var blPred = g.node(g.predecessors(bl)[0]),
+	        brPred = g.node(g.predecessors(br)[0]);
+	      if (!_.has(result, "barycenter")) {
+	        result.barycenter = 0;
+	        result.weight = 0;
+	      }
+	      result.barycenter = (result.barycenter * result.weight +
+	                           blPred.order + brPred.order) / (result.weight + 2);
+	      result.weight += 2;
+	    }
+	  }
+
+	  return result;
+	}
+
+	function expandSubgraphs(entries, subgraphs) {
+	  _.forEach(entries, function(entry) {
+	    entry.vs = _.flatten(entry.vs.map(function(v) {
+	      if (subgraphs[v]) {
+	        return subgraphs[v].vs;
+	      }
+	      return v;
+	    }), true);
+	  });
+	}
+
+	function mergeBarycenters(target, other) {
+	  if (!_.isUndefined(target.barycenter)) {
+	    target.barycenter = (target.barycenter * target.weight +
+	                         other.barycenter * other.weight) /
+	                        (target.weight + other.weight);
+	    target.weight += other.weight;
+	  } else {
+	    target.barycenter = other.barycenter;
+	    target.weight = other.weight;
+	  }
+	}
+
+
+/***/ }),
+/* 282 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+
+	module.exports = barycenter;
+
+	function barycenter(g, movable) {
+	  return _.map(movable, function(v) {
+	    var inV = g.inEdges(v);
+	    if (!inV.length) {
+	      return { v: v };
+	    } else {
+	      var result = _.reduce(inV, function(acc, e) {
+	        var edge = g.edge(e),
+	          nodeU = g.node(e.v);
+	        return {
+	          sum: acc.sum + (edge.weight * nodeU.order),
+	          weight: acc.weight + edge.weight
+	        };
+	      }, { sum: 0, weight: 0 });
+
+	      return {
+	        v: v,
+	        barycenter: result.sum / result.weight,
+	        weight: result.weight
+	      };
+	    }
+	  });
+	}
+
+
+
+/***/ }),
+/* 283 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+
+	module.exports = resolveConflicts;
+
+	/*
+	 * Given a list of entries of the form {v, barycenter, weight} and a
+	 * constraint graph this function will resolve any conflicts between the
+	 * constraint graph and the barycenters for the entries. If the barycenters for
+	 * an entry would violate a constraint in the constraint graph then we coalesce
+	 * the nodes in the conflict into a new node that respects the contraint and
+	 * aggregates barycenter and weight information.
+	 *
+	 * This implementation is based on the description in Forster, "A Fast and
+	 * Simple Hueristic for Constrained Two-Level Crossing Reduction," thought it
+	 * differs in some specific details.
+	 *
+	 * Pre-conditions:
+	 *
+	 *    1. Each entry has the form {v, barycenter, weight}, or if the node has
+	 *       no barycenter, then {v}.
+	 *
+	 * Returns:
+	 *
+	 *    A new list of entries of the form {vs, i, barycenter, weight}. The list
+	 *    `vs` may either be a singleton or it may be an aggregation of nodes
+	 *    ordered such that they do not violate constraints from the constraint
+	 *    graph. The property `i` is the lowest original index of any of the
+	 *    elements in `vs`.
+	 */
+	function resolveConflicts(entries, cg) {
+	  var mappedEntries = {};
+	  _.forEach(entries, function(entry, i) {
+	    var tmp = mappedEntries[entry.v] = {
+	      indegree: 0,
+	      "in": [],
+	      out: [],
+	      vs: [entry.v],
+	      i: i
+	    };
+	    if (!_.isUndefined(entry.barycenter)) {
+	      tmp.barycenter = entry.barycenter;
+	      tmp.weight = entry.weight;
+	    }
+	  });
+
+	  _.forEach(cg.edges(), function(e) {
+	    var entryV = mappedEntries[e.v];
+	    var entryW = mappedEntries[e.w];
+	    if (!_.isUndefined(entryV) && !_.isUndefined(entryW)) {
+	      entryW.indegree++;
+	      entryV.out.push(mappedEntries[e.w]);
+	    }
+	  });
+
+	  var sourceSet = _.filter(mappedEntries, function(entry) {
+	    return !entry.indegree;
+	  });
+
+	  return doResolveConflicts(sourceSet);
+	}
+
+	function doResolveConflicts(sourceSet) {
+	  var entries = [];
+
+	  function handleIn(vEntry) {
+	    return function(uEntry) {
+	      if (uEntry.merged) {
+	        return;
+	      }
+	      if (_.isUndefined(uEntry.barycenter) ||
+	          _.isUndefined(vEntry.barycenter) ||
+	          uEntry.barycenter >= vEntry.barycenter) {
+	        mergeEntries(vEntry, uEntry);
+	      }
+	    };
+	  }
+
+	  function handleOut(vEntry) {
+	    return function(wEntry) {
+	      wEntry["in"].push(vEntry);
+	      if (--wEntry.indegree === 0) {
+	        sourceSet.push(wEntry);
+	      }
+	    };
+	  }
+
+	  while (sourceSet.length) {
+	    var entry = sourceSet.pop();
+	    entries.push(entry);
+	    _.forEach(entry["in"].reverse(), handleIn(entry));
+	    _.forEach(entry.out, handleOut(entry));
+	  }
+
+	  return _.map(_.filter(entries, function(entry) { return !entry.merged; }),
+	    function(entry) {
+	      return _.pick(entry, ["vs", "i", "barycenter", "weight"]);
+	    });
+
+	}
+
+	function mergeEntries(target, source) {
+	  var sum = 0;
+	  var weight = 0;
+
+	  if (target.weight) {
+	    sum += target.barycenter * target.weight;
+	    weight += target.weight;
+	  }
+
+	  if (source.weight) {
+	    sum += source.barycenter * source.weight;
+	    weight += source.weight;
+	  }
+
+	  target.vs = source.vs.concat(target.vs);
+	  target.barycenter = sum / weight;
+	  target.weight = weight;
+	  target.i = Math.min(source.i, target.i);
+	  source.merged = true;
+	}
+
+
+/***/ }),
+/* 284 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+	var util = __webpack_require__(269);
+
+	module.exports = sort;
+
+	function sort(entries, biasRight) {
+	  var parts = util.partition(entries, function(entry) {
+	    return _.has(entry, "barycenter");
+	  });
+	  var sortable = parts.lhs,
+	    unsortable = _.sortBy(parts.rhs, function(entry) { return -entry.i; }),
+	    vs = [],
+	    sum = 0,
+	    weight = 0,
+	    vsIndex = 0;
+
+	  sortable.sort(compareWithBias(!!biasRight));
+
+	  vsIndex = consumeUnsortable(vs, unsortable, vsIndex);
+
+	  _.forEach(sortable, function (entry) {
+	    vsIndex += entry.vs.length;
+	    vs.push(entry.vs);
+	    sum += entry.barycenter * entry.weight;
+	    weight += entry.weight;
+	    vsIndex = consumeUnsortable(vs, unsortable, vsIndex);
+	  });
+
+	  var result = { vs: _.flatten(vs, true) };
+	  if (weight) {
+	    result.barycenter = sum / weight;
+	    result.weight = weight;
+	  }
+	  return result;
+	}
+
+	function consumeUnsortable(vs, unsortable, index) {
+	  var last;
+	  while (unsortable.length && (last = _.last(unsortable)).i <= index) {
+	    unsortable.pop();
+	    vs.push(last.vs);
+	    index++;
+	  }
+	  return index;
+	}
+
+	function compareWithBias(bias) {
+	  return function(entryV, entryW) {
+	    if (entryV.barycenter < entryW.barycenter) {
+	      return -1;
+	    } else if (entryV.barycenter > entryW.barycenter) {
+	      return 1;
+	    }
+
+	    return !bias ? entryV.i - entryW.i : entryW.i - entryV.i;
+	  };
+	}
+
+
+/***/ }),
+/* 285 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+	var Graph = __webpack_require__(3).Graph;
+
+	module.exports = buildLayerGraph;
+
+	/*
+	 * Constructs a graph that can be used to sort a layer of nodes. The graph will
+	 * contain all base and subgraph nodes from the request layer in their original
+	 * hierarchy and any edges that are incident on these nodes and are of the type
+	 * requested by the "relationship" parameter.
+	 *
+	 * Nodes from the requested rank that do not have parents are assigned a root
+	 * node in the output graph, which is set in the root graph attribute. This
+	 * makes it easy to walk the hierarchy of movable nodes during ordering.
+	 *
+	 * Pre-conditions:
+	 *
+	 *    1. Input graph is a DAG
+	 *    2. Base nodes in the input graph have a rank attribute
+	 *    3. Subgraph nodes in the input graph has minRank and maxRank attributes
+	 *    4. Edges have an assigned weight
+	 *
+	 * Post-conditions:
+	 *
+	 *    1. Output graph has all nodes in the movable rank with preserved
+	 *       hierarchy.
+	 *    2. Root nodes in the movable layer are made children of the node
+	 *       indicated by the root attribute of the graph.
+	 *    3. Non-movable nodes incident on movable nodes, selected by the
+	 *       relationship parameter, are included in the graph (without hierarchy).
+	 *    4. Edges incident on movable nodes, selected by the relationship
+	 *       parameter, are added to the output graph.
+	 *    5. The weights for copied edges are aggregated as need, since the output
+	 *       graph is not a multi-graph.
+	 */
+	function buildLayerGraph(g, rank, relationship) {
+	  var root = createRootNode(g),
+	    result = new Graph({ compound: true }).setGraph({ root: root })
+	      .setDefaultNodeLabel(function(v) { return g.node(v); });
+
+	  _.forEach(g.nodes(), function(v) {
+	    var node = g.node(v),
+	      parent = g.parent(v);
+
+	    if (node.rank === rank || node.minRank <= rank && rank <= node.maxRank) {
+	      result.setNode(v);
+	      result.setParent(v, parent || root);
+
+	      // This assumes we have only short edges!
+	      _.forEach(g[relationship](v), function(e) {
+	        var u = e.v === v ? e.w : e.v,
+	          edge = result.edge(u, v),
+	          weight = !_.isUndefined(edge) ? edge.weight : 0;
+	        result.setEdge(u, v, { weight: g.edge(e).weight + weight });
+	      });
+
+	      if (_.has(node, "minRank")) {
+	        result.setNode(v, {
+	          borderLeft: node.borderLeft[rank],
+	          borderRight: node.borderRight[rank]
+	        });
+	      }
+	    }
+	  });
+
+	  return result;
+	}
+
+	function createRootNode(g) {
+	  var v;
+	  while (g.hasNode((v = _.uniqueId("_root"))));
+	  return v;
+	}
+
+
+/***/ }),
+/* 286 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+
+	module.exports = addSubgraphConstraints;
+
+	function addSubgraphConstraints(g, cg, vs) {
+	  var prev = {},
+	    rootPrev;
+
+	  _.forEach(vs, function(v) {
+	    var child = g.parent(v),
+	      parent,
+	      prevChild;
+	    while (child) {
+	      parent = g.parent(child);
+	      if (parent) {
+	        prevChild = prev[parent];
+	        prev[parent] = child;
+	      } else {
+	        prevChild = rootPrev;
+	        rootPrev = child;
+	      }
+	      if (prevChild && prevChild !== child) {
+	        cg.setEdge(prevChild, child);
+	        return;
+	      }
+	      child = parent;
+	    }
+	  });
+
+	  /*
+	  function dfs(v) {
+	    var children = v ? g.children(v) : g.children();
+	    if (children.length) {
+	      var min = Number.POSITIVE_INFINITY,
+	          subgraphs = [];
+	      _.each(children, function(child) {
+	        var childMin = dfs(child);
+	        if (g.children(child).length) {
+	          subgraphs.push({ v: child, order: childMin });
+	        }
+	        min = Math.min(min, childMin);
+	      });
+	      _.reduce(_.sortBy(subgraphs, "order"), function(prev, curr) {
+	        cg.setEdge(prev.v, curr.v);
+	        return curr;
+	      });
+	      return min;
+	    }
+	    return g.node(v).order;
+	  }
+	  dfs(undefined);
+	  */
+	}
+
+
+/***/ }),
+/* 287 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+	var util = __webpack_require__(269);
+	var positionX = __webpack_require__(288).positionX;
+
+	module.exports = position;
+
+	function position(g) {
+	  g = util.asNonCompoundGraph(g);
+
+	  positionY(g);
+	  _.forEach(positionX(g), function(x, v) {
+	    g.node(v).x = x;
+	  });
+	}
+
+	function positionY(g) {
+	  var layering = util.buildLayerMatrix(g);
+	  var rankSep = g.graph().ranksep;
+	  var prevY = 0;
+	  _.forEach(layering, function(layer) {
+	    var maxHeight = _.max(_.map(layer, function(v) { return g.node(v).height; }));
+	    _.forEach(layer, function(v) {
+	      g.node(v).y = prevY + maxHeight / 2;
+	    });
+	    prevY += maxHeight + rankSep;
+	  });
+	}
+
+
+
+/***/ }),
+/* 288 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(220);
+	var Graph = __webpack_require__(3).Graph;
+	var util = __webpack_require__(269);
+
+	/*
+	 * This module provides coordinate assignment based on Brandes and Köpf, "Fast
+	 * and Simple Horizontal Coordinate Assignment."
+	 */
+
+	module.exports = {
+	  positionX: positionX,
+	  findType1Conflicts: findType1Conflicts,
+	  findType2Conflicts: findType2Conflicts,
+	  addConflict: addConflict,
+	  hasConflict: hasConflict,
+	  verticalAlignment: verticalAlignment,
+	  horizontalCompaction: horizontalCompaction,
+	  alignCoordinates: alignCoordinates,
+	  findSmallestWidthAlignment: findSmallestWidthAlignment,
+	  balance: balance
+	};
+
+	/*
+	 * Marks all edges in the graph with a type-1 conflict with the "type1Conflict"
+	 * property. A type-1 conflict is one where a non-inner segment crosses an
+	 * inner segment. An inner segment is an edge with both incident nodes marked
+	 * with the "dummy" property.
+	 *
+	 * This algorithm scans layer by layer, starting with the second, for type-1
+	 * conflicts between the current layer and the previous layer. For each layer
+	 * it scans the nodes from left to right until it reaches one that is incident
+	 * on an inner segment. It then scans predecessors to determine if they have
+	 * edges that cross that inner segment. At the end a final scan is done for all
+	 * nodes on the current rank to see if they cross the last visited inner
+	 * segment.
+	 *
+	 * This algorithm (safely) assumes that a dummy node will only be incident on a
+	 * single node in the layers being scanned.
+	 */
+	function findType1Conflicts(g, layering) {
+	  var conflicts = {};
+
+	  function visitLayer(prevLayer, layer) {
+	    var
+	      // last visited node in the previous layer that is incident on an inner
+	      // segment.
+	      k0 = 0,
+	      // Tracks the last node in this layer scanned for crossings with a type-1
+	      // segment.
+	      scanPos = 0,
+	      prevLayerLength = prevLayer.length,
+	      lastNode = _.last(layer);
+
+	    _.forEach(layer, function(v, i) {
+	      var w = findOtherInnerSegmentNode(g, v),
+	        k1 = w ? g.node(w).order : prevLayerLength;
+
+	      if (w || v === lastNode) {
+	        _.forEach(layer.slice(scanPos, i +1), function(scanNode) {
+	          _.forEach(g.predecessors(scanNode), function(u) {
+	            var uLabel = g.node(u),
+	              uPos = uLabel.order;
+	            if ((uPos < k0 || k1 < uPos) &&
+	                !(uLabel.dummy && g.node(scanNode).dummy)) {
+	              addConflict(conflicts, u, scanNode);
+	            }
+	          });
+	        });
+	        scanPos = i + 1;
+	        k0 = k1;
+	      }
+	    });
+
+	    return layer;
+	  }
+
+	  _.reduce(layering, visitLayer);
+	  return conflicts;
+	}
+
+	function findType2Conflicts(g, layering) {
+	  var conflicts = {};
+
+	  function scan(south, southPos, southEnd, prevNorthBorder, nextNorthBorder) {
+	    var v;
+	    _.forEach(_.range(southPos, southEnd), function(i) {
+	      v = south[i];
+	      if (g.node(v).dummy) {
+	        _.forEach(g.predecessors(v), function(u) {
+	          var uNode = g.node(u);
+	          if (uNode.dummy &&
+	              (uNode.order < prevNorthBorder || uNode.order > nextNorthBorder)) {
+	            addConflict(conflicts, u, v);
+	          }
+	        });
+	      }
+	    });
+	  }
+
+
+	  function visitLayer(north, south) {
+	    var prevNorthPos = -1,
+	      nextNorthPos,
+	      southPos = 0;
+
+	    _.forEach(south, function(v, southLookahead) {
+	      if (g.node(v).dummy === "border") {
+	        var predecessors = g.predecessors(v);
+	        if (predecessors.length) {
+	          nextNorthPos = g.node(predecessors[0]).order;
+	          scan(south, southPos, southLookahead, prevNorthPos, nextNorthPos);
+	          southPos = southLookahead;
+	          prevNorthPos = nextNorthPos;
+	        }
+	      }
+	      scan(south, southPos, south.length, nextNorthPos, north.length);
+	    });
+
+	    return south;
+	  }
+
+	  _.reduce(layering, visitLayer);
+	  return conflicts;
+	}
+
+	function findOtherInnerSegmentNode(g, v) {
+	  if (g.node(v).dummy) {
+	    return _.find(g.predecessors(v), function(u) {
+	      return g.node(u).dummy;
+	    });
+	  }
+	}
+
+	function addConflict(conflicts, v, w) {
+	  if (v > w) {
+	    var tmp = v;
+	    v = w;
+	    w = tmp;
+	  }
+
+	  var conflictsV = conflicts[v];
+	  if (!conflictsV) {
+	    conflicts[v] = conflictsV = {};
+	  }
+	  conflictsV[w] = true;
+	}
+
+	function hasConflict(conflicts, v, w) {
+	  if (v > w) {
+	    var tmp = v;
+	    v = w;
+	    w = tmp;
+	  }
+	  return _.has(conflicts[v], w);
+	}
+
+	/*
+	 * Try to align nodes into vertical "blocks" where possible. This algorithm
+	 * attempts to align a node with one of its median neighbors. If the edge
+	 * connecting a neighbor is a type-1 conflict then we ignore that possibility.
+	 * If a previous node has already formed a block with a node after the node
+	 * we're trying to form a block with, we also ignore that possibility - our
+	 * blocks would be split in that scenario.
+	 */
+	function verticalAlignment(g, layering, conflicts, neighborFn) {
+	  var root = {},
+	    align = {},
+	    pos = {};
+
+	  // We cache the position here based on the layering because the graph and
+	  // layering may be out of sync. The layering matrix is manipulated to
+	  // generate different extreme alignments.
+	  _.forEach(layering, function(layer) {
+	    _.forEach(layer, function(v, order) {
+	      root[v] = v;
+	      align[v] = v;
+	      pos[v] = order;
+	    });
+	  });
+
+	  _.forEach(layering, function(layer) {
+	    var prevIdx = -1;
+	    _.forEach(layer, function(v) {
+	      var ws = neighborFn(v);
+	      if (ws.length) {
+	        ws = _.sortBy(ws, function(w) { return pos[w]; });
+	        var mp = (ws.length - 1) / 2;
+	        for (var i = Math.floor(mp), il = Math.ceil(mp); i <= il; ++i) {
+	          var w = ws[i];
+	          if (align[v] === v &&
+	              prevIdx < pos[w] &&
+	              !hasConflict(conflicts, v, w)) {
+	            align[w] = v;
+	            align[v] = root[v] = root[w];
+	            prevIdx = pos[w];
+	          }
+	        }
+	      }
+	    });
+	  });
+
+	  return { root: root, align: align };
+	}
+
+	function horizontalCompaction(g, layering, root, align, reverseSep) {
+	  // This portion of the algorithm differs from BK due to a number of problems.
+	  // Instead of their algorithm we construct a new block graph and do two
+	  // sweeps. The first sweep places blocks with the smallest possible
+	  // coordinates. The second sweep removes unused space by moving blocks to the
+	  // greatest coordinates without violating separation.
+	  var xs = {},
+	    blockG = buildBlockGraph(g, layering, root, reverseSep),
+	    borderType = reverseSep ? "borderLeft" : "borderRight";
+
+	  function iterate(setXsFunc, nextNodesFunc) {
+	    var stack = blockG.nodes();
+	    var elem = stack.pop();
+	    var visited = {};
+	    while (elem) {
+	      if (visited[elem]) {
+	        setXsFunc(elem);
+	      } else {
+	        visited[elem] = true;
+	        stack.push(elem);
+	        stack = stack.concat(nextNodesFunc(elem));
+	      }
+
+	      elem = stack.pop();
+	    }
+	  }
+
+	  // First pass, assign smallest coordinates
+	  function pass1(elem) {
+	    xs[elem] = blockG.inEdges(elem).reduce(function(acc, e) {
+	      return Math.max(acc, xs[e.v] + blockG.edge(e));
+	    }, 0);
+	  }
+
+	  // Second pass, assign greatest coordinates
+	  function pass2(elem) {
+	    var min = blockG.outEdges(elem).reduce(function(acc, e) {
+	      return Math.min(acc, xs[e.w] - blockG.edge(e));
+	    }, Number.POSITIVE_INFINITY);
+
+	    var node = g.node(elem);
+	    if (min !== Number.POSITIVE_INFINITY && node.borderType !== borderType) {
+	      xs[elem] = Math.max(xs[elem], min);
+	    }
+	  }
+
+	  iterate(pass1, blockG.predecessors.bind(blockG));
+	  iterate(pass2, blockG.successors.bind(blockG));
+
+	  // Assign x coordinates to all nodes
+	  _.forEach(align, function(v) {
+	    xs[v] = xs[root[v]];
+	  });
+
+	  return xs;
+	}
+
+
+	function buildBlockGraph(g, layering, root, reverseSep) {
+	  var blockGraph = new Graph(),
+	    graphLabel = g.graph(),
+	    sepFn = sep(graphLabel.nodesep, graphLabel.edgesep, reverseSep);
+
+	  _.forEach(layering, function(layer) {
+	    var u;
+	    _.forEach(layer, function(v) {
+	      var vRoot = root[v];
+	      blockGraph.setNode(vRoot);
+	      if (u) {
+	        var uRoot = root[u],
+	          prevMax = blockGraph.edge(uRoot, vRoot);
+	        blockGraph.setEdge(uRoot, vRoot, Math.max(sepFn(g, v, u), prevMax || 0));
+	      }
+	      u = v;
+	    });
+	  });
+
+	  return blockGraph;
+	}
+
+	/*
+	 * Returns the alignment that has the smallest width of the given alignments.
+	 */
+	function findSmallestWidthAlignment(g, xss) {
+	  return _.minBy(_.values(xss), function (xs) {
+	    var max = Number.NEGATIVE_INFINITY;
+	    var min = Number.POSITIVE_INFINITY;
+
+	    _.forIn(xs, function (x, v) {
+	      var halfWidth = width(g, v) / 2;
+
+	      max = Math.max(x + halfWidth, max);
+	      min = Math.min(x - halfWidth, min);
+	    });
+
+	    return max - min;
+	  });
+	}
+
+	/*
+	 * Align the coordinates of each of the layout alignments such that
+	 * left-biased alignments have their minimum coordinate at the same point as
+	 * the minimum coordinate of the smallest width alignment and right-biased
+	 * alignments have their maximum coordinate at the same point as the maximum
+	 * coordinate of the smallest width alignment.
+	 */
+	function alignCoordinates(xss, alignTo) {
+	  var alignToVals = _.values(alignTo),
+	    alignToMin = _.min(alignToVals),
+	    alignToMax = _.max(alignToVals);
+
+	  _.forEach(["u", "d"], function(vert) {
+	    _.forEach(["l", "r"], function(horiz) {
+	      var alignment = vert + horiz,
+	        xs = xss[alignment],
+	        delta;
+	      if (xs === alignTo) return;
+
+	      var xsVals = _.values(xs);
+	      delta = horiz === "l" ? alignToMin - _.min(xsVals) : alignToMax - _.max(xsVals);
+
+	      if (delta) {
+	        xss[alignment] = _.mapValues(xs, function(x) { return x + delta; });
+	      }
+	    });
+	  });
+	}
+
+	function balance(xss, align) {
+	  return _.mapValues(xss.ul, function(ignore, v) {
+	    if (align) {
+	      return xss[align.toLowerCase()][v];
+	    } else {
+	      var xs = _.sortBy(_.map(xss, v));
+	      return (xs[1] + xs[2]) / 2;
+	    }
+	  });
+	}
+
+	function positionX(g) {
+	  var layering = util.buildLayerMatrix(g);
+	  var conflicts = _.merge(
+	    findType1Conflicts(g, layering),
+	    findType2Conflicts(g, layering));
+
+	  var xss = {};
+	  var adjustedLayering;
+	  _.forEach(["u", "d"], function(vert) {
+	    adjustedLayering = vert === "u" ? layering : _.values(layering).reverse();
+	    _.forEach(["l", "r"], function(horiz) {
+	      if (horiz === "r") {
+	        adjustedLayering = _.map(adjustedLayering, function(inner) {
+	          return _.values(inner).reverse();
+	        });
+	      }
+
+	      var neighborFn = (vert === "u" ? g.predecessors : g.successors).bind(g);
+	      var align = verticalAlignment(g, adjustedLayering, conflicts, neighborFn);
+	      var xs = horizontalCompaction(g, adjustedLayering,
+	        align.root, align.align, horiz === "r");
+	      if (horiz === "r") {
+	        xs = _.mapValues(xs, function(x) { return -x; });
+	      }
+	      xss[vert + horiz] = xs;
+	    });
+	  });
+
+	  var smallestWidth = findSmallestWidthAlignment(g, xss);
+	  alignCoordinates(xss, smallestWidth);
+	  return balance(xss, g.graph().align);
+	}
+
+	function sep(nodeSep, edgeSep, reverseSep) {
+	  return function(g, v, w) {
+	    var vLabel = g.node(v);
+	    var wLabel = g.node(w);
+	    var sum = 0;
+	    var delta;
+
+	    sum += vLabel.width / 2;
+	    if (_.has(vLabel, "labelpos")) {
+	      switch (vLabel.labelpos.toLowerCase()) {
+	      case "l": delta = -vLabel.width / 2; break;
+	      case "r": delta = vLabel.width / 2; break;
+	      }
+	    }
+	    if (delta) {
+	      sum += reverseSep ? delta : -delta;
+	    }
+	    delta = 0;
+
+	    sum += (vLabel.dummy ? edgeSep : nodeSep) / 2;
+	    sum += (wLabel.dummy ? edgeSep : nodeSep) / 2;
+
+	    sum += wLabel.width / 2;
+	    if (_.has(wLabel, "labelpos")) {
+	      switch (wLabel.labelpos.toLowerCase()) {
+	      case "l": delta = wLabel.width / 2; break;
+	      case "r": delta = -wLabel.width / 2; break;
+	      }
+	    }
+	    if (delta) {
+	      sum += reverseSep ? delta : -delta;
+	    }
+	    delta = 0;
+
+	    return sum;
+	  };
+	}
+
+	function width(g, v) {
+	  return g.node(v).width;
+	}
+
+
+/***/ }),
+/* 289 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(220);
+	var util = __webpack_require__(269);
+	var Graph = __webpack_require__(3).Graph;
+
+	module.exports = {
+	  debugOrdering: debugOrdering
+	};
+
+	/* istanbul ignore next */
+	function debugOrdering(g) {
+	  var layerMatrix = util.buildLayerMatrix(g);
+
+	  var h = new Graph({ compound: true, multigraph: true }).setGraph({});
+
+	  _.forEach(g.nodes(), function(v) {
+	    h.setNode(v, { label: v });
+	    h.setParent(v, "layer" + g.node(v).rank);
+	  });
+
+	  _.forEach(g.edges(), function(e) {
+	    h.setEdge(e.v, e.w, {}, e.name);
+	  });
+
+	  _.forEach(layerMatrix, function(layer, i) {
+	    var layerV = "layer" + i;
+	    h.setNode(layerV, { rank: "same" });
+	    _.reduce(layer, function(u, v) {
+	      h.setEdge(u, v, { style: "invis" });
+	      return v;
+	    });
+	  });
+
+	  return h;
+	}
+
+
+/***/ }),
+/* 290 */
+/***/ (function(module, exports) {
+
+	module.exports = "0.8.5";
+
+
+/***/ }),
+/* 291 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -17872,41 +22788,41 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 218 */
+/* 292 */
 /***/ (function(module, exports) {
 
-	module.exports = __WEBPACK_EXTERNAL_MODULE_218__;
+	module.exports = __WEBPACK_EXTERNAL_MODULE_292__;
 
 /***/ }),
-/* 219 */
+/* 293 */
 /***/ (function(module, exports) {
 
-	module.exports = __WEBPACK_EXTERNAL_MODULE_219__;
+	module.exports = __WEBPACK_EXTERNAL_MODULE_293__;
 
 /***/ }),
-/* 220 */
+/* 294 */
 /***/ (function(module, exports) {
 
-	module.exports = __WEBPACK_EXTERNAL_MODULE_220__;
+	module.exports = __WEBPACK_EXTERNAL_MODULE_294__;
 
 /***/ }),
-/* 221 */
+/* 295 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var SvgPanZoom = __webpack_require__(222);
+	var SvgPanZoom = __webpack_require__(296);
 
 	module.exports = SvgPanZoom;
 
 
 /***/ }),
-/* 222 */
+/* 296 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Wheel = __webpack_require__(223),
-	  ControlIcons = __webpack_require__(224),
-	  Utils = __webpack_require__(226),
-	  SvgUtils = __webpack_require__(225),
-	  ShadowViewport = __webpack_require__(227);
+	var Wheel = __webpack_require__(297),
+	  ControlIcons = __webpack_require__(298),
+	  Utils = __webpack_require__(300),
+	  SvgUtils = __webpack_require__(299),
+	  ShadowViewport = __webpack_require__(301);
 
 	var SvgPanZoom = function(svg, options) {
 	  this.init(svg, options);
@@ -18871,7 +23787,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 223 */
+/* 297 */
 /***/ (function(module, exports) {
 
 	// uniwheel 0.1.2 (customized)
@@ -19016,10 +23932,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 224 */
+/* 298 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var SvgUtils = __webpack_require__(225);
+	var SvgUtils = __webpack_require__(299);
 
 	module.exports = {
 	  enable: function(instance) {
@@ -19221,10 +24137,10 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 225 */
+/* 299 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var Utils = __webpack_require__(226),
+	var Utils = __webpack_require__(300),
 	  _browser = "unknown";
 
 	// http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
@@ -19468,7 +24384,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 226 */
+/* 300 */
 /***/ (function(module, exports) {
 
 	module.exports = {
@@ -19770,11 +24686,11 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 227 */
+/* 301 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var SvgUtils = __webpack_require__(225),
-	  Utils = __webpack_require__(226);
+	var SvgUtils = __webpack_require__(299),
+	  Utils = __webpack_require__(300);
 
 	var ShadowViewport = function(viewport, options) {
 	  this.init(viewport, options);
@@ -20142,7 +25058,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 228 */
+/* 302 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {(function (global, factory) {
@@ -21976,4883 +26892,6 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ }),
-/* 229 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	/*
-	Copyright (c) 2012-2014 Chris Pettitt
-
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
-
-	The above copyright notice and this permission notice shall be included in
-	all copies or substantial portions of the Software.
-
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-	THE SOFTWARE.
-	*/
-
-	module.exports = {
-	  graphlib: __webpack_require__(230),
-
-	  layout: __webpack_require__(231),
-	  debug: __webpack_require__(301),
-	  util: {
-	    time: __webpack_require__(281).time,
-	    notime: __webpack_require__(281).notime
-	  },
-	  version: __webpack_require__(302)
-	};
-
-
-/***/ }),
-/* 230 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	/* global window */
-
-	var graphlib;
-
-	if (true) {
-	  try {
-	    graphlib = __webpack_require__(2);
-	  } catch (e) {
-	    // continue regardless of error
-	  }
-	}
-
-	if (!graphlib) {
-	  graphlib = window.graphlib;
-	}
-
-	module.exports = graphlib;
-
-
-/***/ }),
-/* 231 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-	var acyclic = __webpack_require__(277);
-	var normalize = __webpack_require__(280);
-	var rank = __webpack_require__(282);
-	var normalizeRanks = __webpack_require__(281).normalizeRanks;
-	var parentDummyChains = __webpack_require__(286);
-	var removeEmptyRanks = __webpack_require__(281).removeEmptyRanks;
-	var nestingGraph = __webpack_require__(287);
-	var addBorderSegments = __webpack_require__(288);
-	var coordinateSystem = __webpack_require__(289);
-	var order = __webpack_require__(290);
-	var position = __webpack_require__(299);
-	var util = __webpack_require__(281);
-	var Graph = __webpack_require__(230).Graph;
-
-	module.exports = layout;
-
-	function layout(g, opts) {
-	  var time = opts && opts.debugTiming ? util.time : util.notime;
-	  time("layout", function() {
-	    var layoutGraph = 
-	      time("  buildLayoutGraph", function() { return buildLayoutGraph(g); });
-	    time("  runLayout",        function() { runLayout(layoutGraph, time); });
-	    time("  updateInputGraph", function() { updateInputGraph(g, layoutGraph); });
-	  });
-	}
-
-	function runLayout(g, time) {
-	  time("    makeSpaceForEdgeLabels", function() { makeSpaceForEdgeLabels(g); });
-	  time("    removeSelfEdges",        function() { removeSelfEdges(g); });
-	  time("    acyclic",                function() { acyclic.run(g); });
-	  time("    nestingGraph.run",       function() { nestingGraph.run(g); });
-	  time("    rank",                   function() { rank(util.asNonCompoundGraph(g)); });
-	  time("    injectEdgeLabelProxies", function() { injectEdgeLabelProxies(g); });
-	  time("    removeEmptyRanks",       function() { removeEmptyRanks(g); });
-	  time("    nestingGraph.cleanup",   function() { nestingGraph.cleanup(g); });
-	  time("    normalizeRanks",         function() { normalizeRanks(g); });
-	  time("    assignRankMinMax",       function() { assignRankMinMax(g); });
-	  time("    removeEdgeLabelProxies", function() { removeEdgeLabelProxies(g); });
-	  time("    normalize.run",          function() { normalize.run(g); });
-	  time("    parentDummyChains",      function() { parentDummyChains(g); });
-	  time("    addBorderSegments",      function() { addBorderSegments(g); });
-	  time("    order",                  function() { order(g); });
-	  time("    insertSelfEdges",        function() { insertSelfEdges(g); });
-	  time("    adjustCoordinateSystem", function() { coordinateSystem.adjust(g); });
-	  time("    position",               function() { position(g); });
-	  time("    positionSelfEdges",      function() { positionSelfEdges(g); });
-	  time("    removeBorderNodes",      function() { removeBorderNodes(g); });
-	  time("    normalize.undo",         function() { normalize.undo(g); });
-	  time("    fixupEdgeLabelCoords",   function() { fixupEdgeLabelCoords(g); });
-	  time("    undoCoordinateSystem",   function() { coordinateSystem.undo(g); });
-	  time("    translateGraph",         function() { translateGraph(g); });
-	  time("    assignNodeIntersects",   function() { assignNodeIntersects(g); });
-	  time("    reversePoints",          function() { reversePointsForReversedEdges(g); });
-	  time("    acyclic.undo",           function() { acyclic.undo(g); });
-	}
-
-	/*
-	 * Copies final layout information from the layout graph back to the input
-	 * graph. This process only copies whitelisted attributes from the layout graph
-	 * to the input graph, so it serves as a good place to determine what
-	 * attributes can influence layout.
-	 */
-	function updateInputGraph(inputGraph, layoutGraph) {
-	  _.forEach(inputGraph.nodes(), function(v) {
-	    var inputLabel = inputGraph.node(v);
-	    var layoutLabel = layoutGraph.node(v);
-
-	    if (inputLabel) {
-	      inputLabel.x = layoutLabel.x;
-	      inputLabel.y = layoutLabel.y;
-
-	      if (layoutGraph.children(v).length) {
-	        inputLabel.width = layoutLabel.width;
-	        inputLabel.height = layoutLabel.height;
-	      }
-	    }
-	  });
-
-	  _.forEach(inputGraph.edges(), function(e) {
-	    var inputLabel = inputGraph.edge(e);
-	    var layoutLabel = layoutGraph.edge(e);
-
-	    inputLabel.points = layoutLabel.points;
-	    if (_.has(layoutLabel, "x")) {
-	      inputLabel.x = layoutLabel.x;
-	      inputLabel.y = layoutLabel.y;
-	    }
-	  });
-
-	  inputGraph.graph().width = layoutGraph.graph().width;
-	  inputGraph.graph().height = layoutGraph.graph().height;
-	}
-
-	var graphNumAttrs = ["nodesep", "edgesep", "ranksep", "marginx", "marginy"];
-	var graphDefaults = { ranksep: 50, edgesep: 20, nodesep: 50, rankdir: "tb" };
-	var graphAttrs = ["acyclicer", "ranker", "rankdir", "align"];
-	var nodeNumAttrs = ["width", "height"];
-	var nodeDefaults = { width: 0, height: 0 };
-	var edgeNumAttrs = ["minlen", "weight", "width", "height", "labeloffset"];
-	var edgeDefaults = {
-	  minlen: 1, weight: 1, width: 0, height: 0,
-	  labeloffset: 10, labelpos: "r"
-	};
-	var edgeAttrs = ["labelpos"];
-
-	/*
-	 * Constructs a new graph from the input graph, which can be used for layout.
-	 * This process copies only whitelisted attributes from the input graph to the
-	 * layout graph. Thus this function serves as a good place to determine what
-	 * attributes can influence layout.
-	 */
-	function buildLayoutGraph(inputGraph) {
-	  var g = new Graph({ multigraph: true, compound: true });
-	  var graph = canonicalize(inputGraph.graph());
-
-	  g.setGraph(_.merge({},
-	    graphDefaults,
-	    selectNumberAttrs(graph, graphNumAttrs),
-	    _.pick(graph, graphAttrs)));
-
-	  _.forEach(inputGraph.nodes(), function(v) {
-	    var node = canonicalize(inputGraph.node(v));
-	    g.setNode(v, _.defaults(selectNumberAttrs(node, nodeNumAttrs), nodeDefaults));
-	    g.setParent(v, inputGraph.parent(v));
-	  });
-
-	  _.forEach(inputGraph.edges(), function(e) {
-	    var edge = canonicalize(inputGraph.edge(e));
-	    g.setEdge(e, _.merge({},
-	      edgeDefaults,
-	      selectNumberAttrs(edge, edgeNumAttrs),
-	      _.pick(edge, edgeAttrs)));
-	  });
-
-	  return g;
-	}
-
-	/*
-	 * This idea comes from the Gansner paper: to account for edge labels in our
-	 * layout we split each rank in half by doubling minlen and halving ranksep.
-	 * Then we can place labels at these mid-points between nodes.
-	 *
-	 * We also add some minimal padding to the width to push the label for the edge
-	 * away from the edge itself a bit.
-	 */
-	function makeSpaceForEdgeLabels(g) {
-	  var graph = g.graph();
-	  graph.ranksep /= 2;
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    edge.minlen *= 2;
-	    if (edge.labelpos.toLowerCase() !== "c") {
-	      if (graph.rankdir === "TB" || graph.rankdir === "BT") {
-	        edge.width += edge.labeloffset;
-	      } else {
-	        edge.height += edge.labeloffset;
-	      }
-	    }
-	  });
-	}
-
-	/*
-	 * Creates temporary dummy nodes that capture the rank in which each edge's
-	 * label is going to, if it has one of non-zero width and height. We do this
-	 * so that we can safely remove empty ranks while preserving balance for the
-	 * label's position.
-	 */
-	function injectEdgeLabelProxies(g) {
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    if (edge.width && edge.height) {
-	      var v = g.node(e.v);
-	      var w = g.node(e.w);
-	      var label = { rank: (w.rank - v.rank) / 2 + v.rank, e: e };
-	      util.addDummyNode(g, "edge-proxy", label, "_ep");
-	    }
-	  });
-	}
-
-	function assignRankMinMax(g) {
-	  var maxRank = 0;
-	  _.forEach(g.nodes(), function(v) {
-	    var node = g.node(v);
-	    if (node.borderTop) {
-	      node.minRank = g.node(node.borderTop).rank;
-	      node.maxRank = g.node(node.borderBottom).rank;
-	      maxRank = _.max(maxRank, node.maxRank);
-	    }
-	  });
-	  g.graph().maxRank = maxRank;
-	}
-
-	function removeEdgeLabelProxies(g) {
-	  _.forEach(g.nodes(), function(v) {
-	    var node = g.node(v);
-	    if (node.dummy === "edge-proxy") {
-	      g.edge(node.e).labelRank = node.rank;
-	      g.removeNode(v);
-	    }
-	  });
-	}
-
-	function translateGraph(g) {
-	  var minX = Number.POSITIVE_INFINITY;
-	  var maxX = 0;
-	  var minY = Number.POSITIVE_INFINITY;
-	  var maxY = 0;
-	  var graphLabel = g.graph();
-	  var marginX = graphLabel.marginx || 0;
-	  var marginY = graphLabel.marginy || 0;
-
-	  function getExtremes(attrs) {
-	    var x = attrs.x;
-	    var y = attrs.y;
-	    var w = attrs.width;
-	    var h = attrs.height;
-	    minX = Math.min(minX, x - w / 2);
-	    maxX = Math.max(maxX, x + w / 2);
-	    minY = Math.min(minY, y - h / 2);
-	    maxY = Math.max(maxY, y + h / 2);
-	  }
-
-	  _.forEach(g.nodes(), function(v) { getExtremes(g.node(v)); });
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    if (_.has(edge, "x")) {
-	      getExtremes(edge);
-	    }
-	  });
-
-	  minX -= marginX;
-	  minY -= marginY;
-
-	  _.forEach(g.nodes(), function(v) {
-	    var node = g.node(v);
-	    node.x -= minX;
-	    node.y -= minY;
-	  });
-
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    _.forEach(edge.points, function(p) {
-	      p.x -= minX;
-	      p.y -= minY;
-	    });
-	    if (_.has(edge, "x")) { edge.x -= minX; }
-	    if (_.has(edge, "y")) { edge.y -= minY; }
-	  });
-
-	  graphLabel.width = maxX - minX + marginX;
-	  graphLabel.height = maxY - minY + marginY;
-	}
-
-	function assignNodeIntersects(g) {
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    var nodeV = g.node(e.v);
-	    var nodeW = g.node(e.w);
-	    var p1, p2;
-	    if (!edge.points) {
-	      edge.points = [];
-	      p1 = nodeW;
-	      p2 = nodeV;
-	    } else {
-	      p1 = edge.points[0];
-	      p2 = edge.points[edge.points.length - 1];
-	    }
-	    edge.points.unshift(util.intersectRect(nodeV, p1));
-	    edge.points.push(util.intersectRect(nodeW, p2));
-	  });
-	}
-
-	function fixupEdgeLabelCoords(g) {
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    if (_.has(edge, "x")) {
-	      if (edge.labelpos === "l" || edge.labelpos === "r") {
-	        edge.width -= edge.labeloffset;
-	      }
-	      switch (edge.labelpos) {
-	      case "l": edge.x -= edge.width / 2 + edge.labeloffset; break;
-	      case "r": edge.x += edge.width / 2 + edge.labeloffset; break;
-	      }
-	    }
-	  });
-	}
-
-	function reversePointsForReversedEdges(g) {
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    if (edge.reversed) {
-	      edge.points.reverse();
-	    }
-	  });
-	}
-
-	function removeBorderNodes(g) {
-	  _.forEach(g.nodes(), function(v) {
-	    if (g.children(v).length) {
-	      var node = g.node(v);
-	      var t = g.node(node.borderTop);
-	      var b = g.node(node.borderBottom);
-	      var l = g.node(_.last(node.borderLeft));
-	      var r = g.node(_.last(node.borderRight));
-
-	      node.width = Math.abs(r.x - l.x);
-	      node.height = Math.abs(b.y - t.y);
-	      node.x = l.x + node.width / 2;
-	      node.y = t.y + node.height / 2;
-	    }
-	  });
-
-	  _.forEach(g.nodes(), function(v) {
-	    if (g.node(v).dummy === "border") {
-	      g.removeNode(v);
-	    }
-	  });
-	}
-
-	function removeSelfEdges(g) {
-	  _.forEach(g.edges(), function(e) {
-	    if (e.v === e.w) {
-	      var node = g.node(e.v);
-	      if (!node.selfEdges) {
-	        node.selfEdges = [];
-	      }
-	      node.selfEdges.push({ e: e, label: g.edge(e) });
-	      g.removeEdge(e);
-	    }
-	  });
-	}
-
-	function insertSelfEdges(g) {
-	  var layers = util.buildLayerMatrix(g);
-	  _.forEach(layers, function(layer) {
-	    var orderShift = 0;
-	    _.forEach(layer, function(v, i) {
-	      var node = g.node(v);
-	      node.order = i + orderShift;
-	      _.forEach(node.selfEdges, function(selfEdge) {
-	        util.addDummyNode(g, "selfedge", {
-	          width: selfEdge.label.width,
-	          height: selfEdge.label.height,
-	          rank: node.rank,
-	          order: i + (++orderShift),
-	          e: selfEdge.e,
-	          label: selfEdge.label
-	        }, "_se");
-	      });
-	      delete node.selfEdges;
-	    });
-	  });
-	}
-
-	function positionSelfEdges(g) {
-	  _.forEach(g.nodes(), function(v) {
-	    var node = g.node(v);
-	    if (node.dummy === "selfedge") {
-	      var selfNode = g.node(node.e.v);
-	      var x = selfNode.x + selfNode.width / 2;
-	      var y = selfNode.y;
-	      var dx = node.x - x;
-	      var dy = selfNode.height / 2;
-	      g.setEdge(node.e, node.label);
-	      g.removeNode(v);
-	      node.label.points = [
-	        { x: x + 2 * dx / 3, y: y - dy },
-	        { x: x + 5 * dx / 6, y: y - dy },
-	        { x: x +     dx    , y: y },
-	        { x: x + 5 * dx / 6, y: y + dy },
-	        { x: x + 2 * dx / 3, y: y + dy }
-	      ];
-	      node.label.x = node.x;
-	      node.label.y = node.y;
-	    }
-	  });
-	}
-
-	function selectNumberAttrs(obj, attrs) {
-	  return _.mapValues(_.pick(obj, attrs), Number);
-	}
-
-	function canonicalize(attrs) {
-	  var newAttrs = {};
-	  _.forEach(attrs, function(v, k) {
-	    newAttrs[k.toLowerCase()] = v;
-	  });
-	  return newAttrs;
-	}
-
-
-/***/ }),
-/* 232 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	/* global window */
-
-	var lodash;
-
-	if (true) {
-	  try {
-	    lodash = {
-	      cloneDeep: __webpack_require__(233),
-	      constant: __webpack_require__(115),
-	      defaults: __webpack_require__(234),
-	      each: __webpack_require__(116),
-	      filter: __webpack_require__(125),
-	      find: __webpack_require__(236),
-	      flatten: __webpack_require__(242),
-	      forEach: __webpack_require__(117),
-	      forIn: __webpack_require__(243),
-	      has:  __webpack_require__(164),
-	      isUndefined: __webpack_require__(167),
-	      last: __webpack_require__(244),
-	      map: __webpack_require__(168),
-	      mapValues: __webpack_require__(245),
-	      max: __webpack_require__(246),
-	      merge: __webpack_require__(249),
-	      min: __webpack_require__(257),
-	      minBy: __webpack_require__(259),
-	      now: __webpack_require__(260),
-	      pick: __webpack_require__(261),
-	      range: __webpack_require__(266),
-	      reduce: __webpack_require__(170),
-	      sortBy: __webpack_require__(269),
-	      uniqueId: __webpack_require__(274),
-	      values: __webpack_require__(199),
-	      zipObject: __webpack_require__(275),
-	    };
-	  } catch (e) {
-	    // continue regardless of error
-	  }
-	}
-
-	if (!lodash) {
-	  lodash = window._;
-	}
-
-	module.exports = lodash;
-
-
-/***/ }),
-/* 233 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseClone = __webpack_require__(7);
-
-	/** Used to compose bitmasks for cloning. */
-	var CLONE_DEEP_FLAG = 1,
-	    CLONE_SYMBOLS_FLAG = 4;
-
-	/**
-	 * This method is like `_.clone` except that it recursively clones `value`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 1.0.0
-	 * @category Lang
-	 * @param {*} value The value to recursively clone.
-	 * @returns {*} Returns the deep cloned value.
-	 * @see _.clone
-	 * @example
-	 *
-	 * var objects = [{ 'a': 1 }, { 'b': 2 }];
-	 *
-	 * var deep = _.cloneDeep(objects);
-	 * console.log(deep[0] === objects[0]);
-	 * // => false
-	 */
-	function cloneDeep(value) {
-	  return baseClone(value, CLONE_DEEP_FLAG | CLONE_SYMBOLS_FLAG);
-	}
-
-	module.exports = cloneDeep;
-
-
-/***/ }),
-/* 234 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseRest = __webpack_require__(183),
-	    eq = __webpack_require__(13),
-	    isIterateeCall = __webpack_require__(235),
-	    keysIn = __webpack_require__(80);
-
-	/** Used for built-in method references. */
-	var objectProto = Object.prototype;
-
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-
-	/**
-	 * Assigns own and inherited enumerable string keyed properties of source
-	 * objects to the destination object for all destination properties that
-	 * resolve to `undefined`. Source objects are applied from left to right.
-	 * Once a property is set, additional values of the same property are ignored.
-	 *
-	 * **Note:** This method mutates `object`.
-	 *
-	 * @static
-	 * @since 0.1.0
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The destination object.
-	 * @param {...Object} [sources] The source objects.
-	 * @returns {Object} Returns `object`.
-	 * @see _.defaultsDeep
-	 * @example
-	 *
-	 * _.defaults({ 'a': 1 }, { 'b': 2 }, { 'a': 3 });
-	 * // => { 'a': 1, 'b': 2 }
-	 */
-	var defaults = baseRest(function(object, sources) {
-	  object = Object(object);
-
-	  var index = -1;
-	  var length = sources.length;
-	  var guard = length > 2 ? sources[2] : undefined;
-
-	  if (guard && isIterateeCall(sources[0], sources[1], guard)) {
-	    length = 1;
-	  }
-
-	  while (++index < length) {
-	    var source = sources[index];
-	    var props = keysIn(source);
-	    var propsIndex = -1;
-	    var propsLength = props.length;
-
-	    while (++propsIndex < propsLength) {
-	      var key = props[propsIndex];
-	      var value = object[key];
-
-	      if (value === undefined ||
-	          (eq(value, objectProto[key]) && !hasOwnProperty.call(object, key))) {
-	        object[key] = source[key];
-	      }
-	    }
-	  }
-
-	  return object;
-	});
-
-	module.exports = defaults;
-
-
-/***/ }),
-/* 235 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var eq = __webpack_require__(13),
-	    isArrayLike = __webpack_require__(78),
-	    isIndex = __webpack_require__(68),
-	    isObject = __webpack_require__(32);
-
-	/**
-	 * Checks if the given arguments are from an iteratee call.
-	 *
-	 * @private
-	 * @param {*} value The potential iteratee value argument.
-	 * @param {*} index The potential iteratee index or key argument.
-	 * @param {*} object The potential iteratee object argument.
-	 * @returns {boolean} Returns `true` if the arguments are from an iteratee call,
-	 *  else `false`.
-	 */
-	function isIterateeCall(value, index, object) {
-	  if (!isObject(object)) {
-	    return false;
-	  }
-	  var type = typeof index;
-	  if (type == 'number'
-	        ? (isArrayLike(object) && isIndex(index, object.length))
-	        : (type == 'string' && index in object)
-	      ) {
-	    return eq(object[index], value);
-	  }
-	  return false;
-	}
-
-	module.exports = isIterateeCall;
-
-
-/***/ }),
-/* 236 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var createFind = __webpack_require__(237),
-	    findIndex = __webpack_require__(238);
-
-	/**
-	 * Iterates over elements of `collection`, returning the first element
-	 * `predicate` returns truthy for. The predicate is invoked with three
-	 * arguments: (value, index|key, collection).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to inspect.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @param {number} [fromIndex=0] The index to search from.
-	 * @returns {*} Returns the matched element, else `undefined`.
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'barney',  'age': 36, 'active': true },
-	 *   { 'user': 'fred',    'age': 40, 'active': false },
-	 *   { 'user': 'pebbles', 'age': 1,  'active': true }
-	 * ];
-	 *
-	 * _.find(users, function(o) { return o.age < 40; });
-	 * // => object for 'barney'
-	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.find(users, { 'age': 1, 'active': true });
-	 * // => object for 'pebbles'
-	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.find(users, ['active', false]);
-	 * // => object for 'fred'
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.find(users, 'active');
-	 * // => object for 'barney'
-	 */
-	var find = createFind(findIndex);
-
-	module.exports = find;
-
-
-/***/ }),
-/* 237 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseIteratee = __webpack_require__(127),
-	    isArrayLike = __webpack_require__(78),
-	    keys = __webpack_require__(58);
-
-	/**
-	 * Creates a `_.find` or `_.findLast` function.
-	 *
-	 * @private
-	 * @param {Function} findIndexFunc The function to find the collection index.
-	 * @returns {Function} Returns the new find function.
-	 */
-	function createFind(findIndexFunc) {
-	  return function(collection, predicate, fromIndex) {
-	    var iterable = Object(collection);
-	    if (!isArrayLike(collection)) {
-	      var iteratee = baseIteratee(predicate, 3);
-	      collection = keys(collection);
-	      predicate = function(key) { return iteratee(iterable[key], key, iterable); };
-	    }
-	    var index = findIndexFunc(collection, predicate, fromIndex);
-	    return index > -1 ? iterable[iteratee ? collection[index] : index] : undefined;
-	  };
-	}
-
-	module.exports = createFind;
-
-
-/***/ }),
-/* 238 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseFindIndex = __webpack_require__(192),
-	    baseIteratee = __webpack_require__(127),
-	    toInteger = __webpack_require__(239);
-
-	/* Built-in method references for those with the same name as other `lodash` methods. */
-	var nativeMax = Math.max;
-
-	/**
-	 * This method is like `_.find` except that it returns the index of the first
-	 * element `predicate` returns truthy for instead of the element itself.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 1.1.0
-	 * @category Array
-	 * @param {Array} array The array to inspect.
-	 * @param {Function} [predicate=_.identity] The function invoked per iteration.
-	 * @param {number} [fromIndex=0] The index to search from.
-	 * @returns {number} Returns the index of the found element, else `-1`.
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'barney',  'active': false },
-	 *   { 'user': 'fred',    'active': false },
-	 *   { 'user': 'pebbles', 'active': true }
-	 * ];
-	 *
-	 * _.findIndex(users, function(o) { return o.user == 'barney'; });
-	 * // => 0
-	 *
-	 * // The `_.matches` iteratee shorthand.
-	 * _.findIndex(users, { 'user': 'fred', 'active': false });
-	 * // => 1
-	 *
-	 * // The `_.matchesProperty` iteratee shorthand.
-	 * _.findIndex(users, ['active', false]);
-	 * // => 0
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.findIndex(users, 'active');
-	 * // => 2
-	 */
-	function findIndex(array, predicate, fromIndex) {
-	  var length = array == null ? 0 : array.length;
-	  if (!length) {
-	    return -1;
-	  }
-	  var index = fromIndex == null ? 0 : toInteger(fromIndex);
-	  if (index < 0) {
-	    index = nativeMax(length + index, 0);
-	  }
-	  return baseFindIndex(array, baseIteratee(predicate, 3), index);
-	}
-
-	module.exports = findIndex;
-
-
-/***/ }),
-/* 239 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var toFinite = __webpack_require__(240);
-
-	/**
-	 * Converts `value` to an integer.
-	 *
-	 * **Note:** This method is loosely based on
-	 * [`ToInteger`](http://www.ecma-international.org/ecma-262/7.0/#sec-tointeger).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.0.0
-	 * @category Lang
-	 * @param {*} value The value to convert.
-	 * @returns {number} Returns the converted integer.
-	 * @example
-	 *
-	 * _.toInteger(3.2);
-	 * // => 3
-	 *
-	 * _.toInteger(Number.MIN_VALUE);
-	 * // => 0
-	 *
-	 * _.toInteger(Infinity);
-	 * // => 1.7976931348623157e+308
-	 *
-	 * _.toInteger('3.2');
-	 * // => 3
-	 */
-	function toInteger(value) {
-	  var result = toFinite(value),
-	      remainder = result % 1;
-
-	  return result === result ? (remainder ? result - remainder : result) : 0;
-	}
-
-	module.exports = toInteger;
-
-
-/***/ }),
-/* 240 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var toNumber = __webpack_require__(241);
-
-	/** Used as references for various `Number` constants. */
-	var INFINITY = 1 / 0,
-	    MAX_INTEGER = 1.7976931348623157e+308;
-
-	/**
-	 * Converts `value` to a finite number.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.12.0
-	 * @category Lang
-	 * @param {*} value The value to convert.
-	 * @returns {number} Returns the converted number.
-	 * @example
-	 *
-	 * _.toFinite(3.2);
-	 * // => 3.2
-	 *
-	 * _.toFinite(Number.MIN_VALUE);
-	 * // => 5e-324
-	 *
-	 * _.toFinite(Infinity);
-	 * // => 1.7976931348623157e+308
-	 *
-	 * _.toFinite('3.2');
-	 * // => 3.2
-	 */
-	function toFinite(value) {
-	  if (!value) {
-	    return value === 0 ? value : 0;
-	  }
-	  value = toNumber(value);
-	  if (value === INFINITY || value === -INFINITY) {
-	    var sign = (value < 0 ? -1 : 1);
-	    return sign * MAX_INTEGER;
-	  }
-	  return value === value ? value : 0;
-	}
-
-	module.exports = toFinite;
-
-
-/***/ }),
-/* 241 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var isObject = __webpack_require__(32),
-	    isSymbol = __webpack_require__(150);
-
-	/** Used as references for various `Number` constants. */
-	var NAN = 0 / 0;
-
-	/** Used to match leading and trailing whitespace. */
-	var reTrim = /^\s+|\s+$/g;
-
-	/** Used to detect bad signed hexadecimal string values. */
-	var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
-
-	/** Used to detect binary string values. */
-	var reIsBinary = /^0b[01]+$/i;
-
-	/** Used to detect octal string values. */
-	var reIsOctal = /^0o[0-7]+$/i;
-
-	/** Built-in method references without a dependency on `root`. */
-	var freeParseInt = parseInt;
-
-	/**
-	 * Converts `value` to a number.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.0.0
-	 * @category Lang
-	 * @param {*} value The value to process.
-	 * @returns {number} Returns the number.
-	 * @example
-	 *
-	 * _.toNumber(3.2);
-	 * // => 3.2
-	 *
-	 * _.toNumber(Number.MIN_VALUE);
-	 * // => 5e-324
-	 *
-	 * _.toNumber(Infinity);
-	 * // => Infinity
-	 *
-	 * _.toNumber('3.2');
-	 * // => 3.2
-	 */
-	function toNumber(value) {
-	  if (typeof value == 'number') {
-	    return value;
-	  }
-	  if (isSymbol(value)) {
-	    return NAN;
-	  }
-	  if (isObject(value)) {
-	    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
-	    value = isObject(other) ? (other + '') : other;
-	  }
-	  if (typeof value != 'string') {
-	    return value === 0 ? value : +value;
-	  }
-	  value = value.replace(reTrim, '');
-	  var isBinary = reIsBinary.test(value);
-	  return (isBinary || reIsOctal.test(value))
-	    ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
-	    : (reIsBadHex.test(value) ? NAN : +value);
-	}
-
-	module.exports = toNumber;
-
-
-/***/ }),
-/* 242 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseFlatten = __webpack_require__(181);
-
-	/**
-	 * Flattens `array` a single level deep.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Array
-	 * @param {Array} array The array to flatten.
-	 * @returns {Array} Returns the new flattened array.
-	 * @example
-	 *
-	 * _.flatten([1, [2, [3, [4]], 5]]);
-	 * // => [1, 2, [3, [4]], 5]
-	 */
-	function flatten(array) {
-	  var length = array == null ? 0 : array.length;
-	  return length ? baseFlatten(array, 1) : [];
-	}
-
-	module.exports = flatten;
-
-
-/***/ }),
-/* 243 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseFor = __webpack_require__(120),
-	    castFunction = __webpack_require__(123),
-	    keysIn = __webpack_require__(80);
-
-	/**
-	 * Iterates over own and inherited enumerable string keyed properties of an
-	 * object and invokes `iteratee` for each property. The iteratee is invoked
-	 * with three arguments: (value, key, object). Iteratee functions may exit
-	 * iteration early by explicitly returning `false`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.3.0
-	 * @category Object
-	 * @param {Object} object The object to iterate over.
-	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
-	 * @returns {Object} Returns `object`.
-	 * @see _.forInRight
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.forIn(new Foo, function(value, key) {
-	 *   console.log(key);
-	 * });
-	 * // => Logs 'a', 'b', then 'c' (iteration order is not guaranteed).
-	 */
-	function forIn(object, iteratee) {
-	  return object == null
-	    ? object
-	    : baseFor(object, castFunction(iteratee), keysIn);
-	}
-
-	module.exports = forIn;
-
-
-/***/ }),
-/* 244 */
-/***/ (function(module, exports) {
-
-	/**
-	 * Gets the last element of `array`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Array
-	 * @param {Array} array The array to query.
-	 * @returns {*} Returns the last element of `array`.
-	 * @example
-	 *
-	 * _.last([1, 2, 3]);
-	 * // => 3
-	 */
-	function last(array) {
-	  var length = array == null ? 0 : array.length;
-	  return length ? array[length - 1] : undefined;
-	}
-
-	module.exports = last;
-
-
-/***/ }),
-/* 245 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseAssignValue = __webpack_require__(54),
-	    baseForOwn = __webpack_require__(119),
-	    baseIteratee = __webpack_require__(127);
-
-	/**
-	 * Creates an object with the same keys as `object` and values generated
-	 * by running each own enumerable string keyed property of `object` thru
-	 * `iteratee`. The iteratee is invoked with three arguments:
-	 * (value, key, object).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 2.4.0
-	 * @category Object
-	 * @param {Object} object The object to iterate over.
-	 * @param {Function} [iteratee=_.identity] The function invoked per iteration.
-	 * @returns {Object} Returns the new mapped object.
-	 * @see _.mapKeys
-	 * @example
-	 *
-	 * var users = {
-	 *   'fred':    { 'user': 'fred',    'age': 40 },
-	 *   'pebbles': { 'user': 'pebbles', 'age': 1 }
-	 * };
-	 *
-	 * _.mapValues(users, function(o) { return o.age; });
-	 * // => { 'fred': 40, 'pebbles': 1 } (iteration order is not guaranteed)
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.mapValues(users, 'age');
-	 * // => { 'fred': 40, 'pebbles': 1 } (iteration order is not guaranteed)
-	 */
-	function mapValues(object, iteratee) {
-	  var result = {};
-	  iteratee = baseIteratee(iteratee, 3);
-
-	  baseForOwn(object, function(value, key, object) {
-	    baseAssignValue(result, key, iteratee(value, key, object));
-	  });
-	  return result;
-	}
-
-	module.exports = mapValues;
-
-
-/***/ }),
-/* 246 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseExtremum = __webpack_require__(247),
-	    baseGt = __webpack_require__(248),
-	    identity = __webpack_require__(124);
-
-	/**
-	 * Computes the maximum value of `array`. If `array` is empty or falsey,
-	 * `undefined` is returned.
-	 *
-	 * @static
-	 * @since 0.1.0
-	 * @memberOf _
-	 * @category Math
-	 * @param {Array} array The array to iterate over.
-	 * @returns {*} Returns the maximum value.
-	 * @example
-	 *
-	 * _.max([4, 2, 8, 6]);
-	 * // => 8
-	 *
-	 * _.max([]);
-	 * // => undefined
-	 */
-	function max(array) {
-	  return (array && array.length)
-	    ? baseExtremum(array, identity, baseGt)
-	    : undefined;
-	}
-
-	module.exports = max;
-
-
-/***/ }),
-/* 247 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var isSymbol = __webpack_require__(150);
-
-	/**
-	 * The base implementation of methods like `_.max` and `_.min` which accepts a
-	 * `comparator` to determine the extremum value.
-	 *
-	 * @private
-	 * @param {Array} array The array to iterate over.
-	 * @param {Function} iteratee The iteratee invoked per iteration.
-	 * @param {Function} comparator The comparator used to compare values.
-	 * @returns {*} Returns the extremum value.
-	 */
-	function baseExtremum(array, iteratee, comparator) {
-	  var index = -1,
-	      length = array.length;
-
-	  while (++index < length) {
-	    var value = array[index],
-	        current = iteratee(value);
-
-	    if (current != null && (computed === undefined
-	          ? (current === current && !isSymbol(current))
-	          : comparator(current, computed)
-	        )) {
-	      var computed = current,
-	          result = value;
-	    }
-	  }
-	  return result;
-	}
-
-	module.exports = baseExtremum;
-
-
-/***/ }),
-/* 248 */
-/***/ (function(module, exports) {
-
-	/**
-	 * The base implementation of `_.gt` which doesn't coerce arguments.
-	 *
-	 * @private
-	 * @param {*} value The value to compare.
-	 * @param {*} other The other value to compare.
-	 * @returns {boolean} Returns `true` if `value` is greater than `other`,
-	 *  else `false`.
-	 */
-	function baseGt(value, other) {
-	  return value > other;
-	}
-
-	module.exports = baseGt;
-
-
-/***/ }),
-/* 249 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseMerge = __webpack_require__(250),
-	    createAssigner = __webpack_require__(256);
-
-	/**
-	 * This method is like `_.assign` except that it recursively merges own and
-	 * inherited enumerable string keyed properties of source objects into the
-	 * destination object. Source properties that resolve to `undefined` are
-	 * skipped if a destination value exists. Array and plain object properties
-	 * are merged recursively. Other objects and value types are overridden by
-	 * assignment. Source objects are applied from left to right. Subsequent
-	 * sources overwrite property assignments of previous sources.
-	 *
-	 * **Note:** This method mutates `object`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.5.0
-	 * @category Object
-	 * @param {Object} object The destination object.
-	 * @param {...Object} [sources] The source objects.
-	 * @returns {Object} Returns `object`.
-	 * @example
-	 *
-	 * var object = {
-	 *   'a': [{ 'b': 2 }, { 'd': 4 }]
-	 * };
-	 *
-	 * var other = {
-	 *   'a': [{ 'c': 3 }, { 'e': 5 }]
-	 * };
-	 *
-	 * _.merge(object, other);
-	 * // => { 'a': [{ 'b': 2, 'c': 3 }, { 'd': 4, 'e': 5 }] }
-	 */
-	var merge = createAssigner(function(object, source, srcIndex) {
-	  baseMerge(object, source, srcIndex);
-	});
-
-	module.exports = merge;
-
-
-/***/ }),
-/* 250 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var Stack = __webpack_require__(8),
-	    assignMergeValue = __webpack_require__(251),
-	    baseFor = __webpack_require__(120),
-	    baseMergeDeep = __webpack_require__(252),
-	    isObject = __webpack_require__(32),
-	    keysIn = __webpack_require__(80),
-	    safeGet = __webpack_require__(254);
-
-	/**
-	 * The base implementation of `_.merge` without support for multiple sources.
-	 *
-	 * @private
-	 * @param {Object} object The destination object.
-	 * @param {Object} source The source object.
-	 * @param {number} srcIndex The index of `source`.
-	 * @param {Function} [customizer] The function to customize merged values.
-	 * @param {Object} [stack] Tracks traversed source values and their merged
-	 *  counterparts.
-	 */
-	function baseMerge(object, source, srcIndex, customizer, stack) {
-	  if (object === source) {
-	    return;
-	  }
-	  baseFor(source, function(srcValue, key) {
-	    stack || (stack = new Stack);
-	    if (isObject(srcValue)) {
-	      baseMergeDeep(object, source, key, srcIndex, baseMerge, customizer, stack);
-	    }
-	    else {
-	      var newValue = customizer
-	        ? customizer(safeGet(object, key), srcValue, (key + ''), object, source, stack)
-	        : undefined;
-
-	      if (newValue === undefined) {
-	        newValue = srcValue;
-	      }
-	      assignMergeValue(object, key, newValue);
-	    }
-	  }, keysIn);
-	}
-
-	module.exports = baseMerge;
-
-
-/***/ }),
-/* 251 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseAssignValue = __webpack_require__(54),
-	    eq = __webpack_require__(13);
-
-	/**
-	 * This function is like `assignValue` except that it doesn't assign
-	 * `undefined` values.
-	 *
-	 * @private
-	 * @param {Object} object The object to modify.
-	 * @param {string} key The key of the property to assign.
-	 * @param {*} value The value to assign.
-	 */
-	function assignMergeValue(object, key, value) {
-	  if ((value !== undefined && !eq(object[key], value)) ||
-	      (value === undefined && !(key in object))) {
-	    baseAssignValue(object, key, value);
-	  }
-	}
-
-	module.exports = assignMergeValue;
-
-
-/***/ }),
-/* 252 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var assignMergeValue = __webpack_require__(251),
-	    cloneBuffer = __webpack_require__(83),
-	    cloneTypedArray = __webpack_require__(108),
-	    copyArray = __webpack_require__(84),
-	    initCloneObject = __webpack_require__(109),
-	    isArguments = __webpack_require__(61),
-	    isArray = __webpack_require__(64),
-	    isArrayLikeObject = __webpack_require__(198),
-	    isBuffer = __webpack_require__(65),
-	    isFunction = __webpack_require__(25),
-	    isObject = __webpack_require__(32),
-	    isPlainObject = __webpack_require__(253),
-	    isTypedArray = __webpack_require__(69),
-	    safeGet = __webpack_require__(254),
-	    toPlainObject = __webpack_require__(255);
-
-	/**
-	 * A specialized version of `baseMerge` for arrays and objects which performs
-	 * deep merges and tracks traversed objects enabling objects with circular
-	 * references to be merged.
-	 *
-	 * @private
-	 * @param {Object} object The destination object.
-	 * @param {Object} source The source object.
-	 * @param {string} key The key of the value to merge.
-	 * @param {number} srcIndex The index of `source`.
-	 * @param {Function} mergeFunc The function to merge values.
-	 * @param {Function} [customizer] The function to customize assigned values.
-	 * @param {Object} [stack] Tracks traversed source values and their merged
-	 *  counterparts.
-	 */
-	function baseMergeDeep(object, source, key, srcIndex, mergeFunc, customizer, stack) {
-	  var objValue = safeGet(object, key),
-	      srcValue = safeGet(source, key),
-	      stacked = stack.get(srcValue);
-
-	  if (stacked) {
-	    assignMergeValue(object, key, stacked);
-	    return;
-	  }
-	  var newValue = customizer
-	    ? customizer(objValue, srcValue, (key + ''), object, source, stack)
-	    : undefined;
-
-	  var isCommon = newValue === undefined;
-
-	  if (isCommon) {
-	    var isArr = isArray(srcValue),
-	        isBuff = !isArr && isBuffer(srcValue),
-	        isTyped = !isArr && !isBuff && isTypedArray(srcValue);
-
-	    newValue = srcValue;
-	    if (isArr || isBuff || isTyped) {
-	      if (isArray(objValue)) {
-	        newValue = objValue;
-	      }
-	      else if (isArrayLikeObject(objValue)) {
-	        newValue = copyArray(objValue);
-	      }
-	      else if (isBuff) {
-	        isCommon = false;
-	        newValue = cloneBuffer(srcValue, true);
-	      }
-	      else if (isTyped) {
-	        isCommon = false;
-	        newValue = cloneTypedArray(srcValue, true);
-	      }
-	      else {
-	        newValue = [];
-	      }
-	    }
-	    else if (isPlainObject(srcValue) || isArguments(srcValue)) {
-	      newValue = objValue;
-	      if (isArguments(objValue)) {
-	        newValue = toPlainObject(objValue);
-	      }
-	      else if (!isObject(objValue) || isFunction(objValue)) {
-	        newValue = initCloneObject(srcValue);
-	      }
-	    }
-	    else {
-	      isCommon = false;
-	    }
-	  }
-	  if (isCommon) {
-	    // Recursively merge objects and arrays (susceptible to call stack limits).
-	    stack.set(srcValue, newValue);
-	    mergeFunc(newValue, srcValue, srcIndex, customizer, stack);
-	    stack['delete'](srcValue);
-	  }
-	  assignMergeValue(object, key, newValue);
-	}
-
-	module.exports = baseMergeDeep;
-
-
-/***/ }),
-/* 253 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseGetTag = __webpack_require__(26),
-	    getPrototype = __webpack_require__(92),
-	    isObjectLike = __webpack_require__(63);
-
-	/** `Object#toString` result references. */
-	var objectTag = '[object Object]';
-
-	/** Used for built-in method references. */
-	var funcProto = Function.prototype,
-	    objectProto = Object.prototype;
-
-	/** Used to resolve the decompiled source of functions. */
-	var funcToString = funcProto.toString;
-
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-
-	/** Used to infer the `Object` constructor. */
-	var objectCtorString = funcToString.call(Object);
-
-	/**
-	 * Checks if `value` is a plain object, that is, an object created by the
-	 * `Object` constructor or one with a `[[Prototype]]` of `null`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.8.0
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 * }
-	 *
-	 * _.isPlainObject(new Foo);
-	 * // => false
-	 *
-	 * _.isPlainObject([1, 2, 3]);
-	 * // => false
-	 *
-	 * _.isPlainObject({ 'x': 0, 'y': 0 });
-	 * // => true
-	 *
-	 * _.isPlainObject(Object.create(null));
-	 * // => true
-	 */
-	function isPlainObject(value) {
-	  if (!isObjectLike(value) || baseGetTag(value) != objectTag) {
-	    return false;
-	  }
-	  var proto = getPrototype(value);
-	  if (proto === null) {
-	    return true;
-	  }
-	  var Ctor = hasOwnProperty.call(proto, 'constructor') && proto.constructor;
-	  return typeof Ctor == 'function' && Ctor instanceof Ctor &&
-	    funcToString.call(Ctor) == objectCtorString;
-	}
-
-	module.exports = isPlainObject;
-
-
-/***/ }),
-/* 254 */
-/***/ (function(module, exports) {
-
-	/**
-	 * Gets the value at `key`, unless `key` is "__proto__" or "constructor".
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @param {string} key The key of the property to get.
-	 * @returns {*} Returns the property value.
-	 */
-	function safeGet(object, key) {
-	  if (key === 'constructor' && typeof object[key] === 'function') {
-	    return;
-	  }
-
-	  if (key == '__proto__') {
-	    return;
-	  }
-
-	  return object[key];
-	}
-
-	module.exports = safeGet;
-
-
-/***/ }),
-/* 255 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var copyObject = __webpack_require__(57),
-	    keysIn = __webpack_require__(80);
-
-	/**
-	 * Converts `value` to a plain object flattening inherited enumerable string
-	 * keyed properties of `value` to own properties of the plain object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 3.0.0
-	 * @category Lang
-	 * @param {*} value The value to convert.
-	 * @returns {Object} Returns the converted plain object.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.assign({ 'a': 1 }, new Foo);
-	 * // => { 'a': 1, 'b': 2 }
-	 *
-	 * _.assign({ 'a': 1 }, _.toPlainObject(new Foo));
-	 * // => { 'a': 1, 'b': 2, 'c': 3 }
-	 */
-	function toPlainObject(value) {
-	  return copyObject(value, keysIn(value));
-	}
-
-	module.exports = toPlainObject;
-
-
-/***/ }),
-/* 256 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseRest = __webpack_require__(183),
-	    isIterateeCall = __webpack_require__(235);
-
-	/**
-	 * Creates a function like `_.assign`.
-	 *
-	 * @private
-	 * @param {Function} assigner The function to assign values.
-	 * @returns {Function} Returns the new assigner function.
-	 */
-	function createAssigner(assigner) {
-	  return baseRest(function(object, sources) {
-	    var index = -1,
-	        length = sources.length,
-	        customizer = length > 1 ? sources[length - 1] : undefined,
-	        guard = length > 2 ? sources[2] : undefined;
-
-	    customizer = (assigner.length > 3 && typeof customizer == 'function')
-	      ? (length--, customizer)
-	      : undefined;
-
-	    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
-	      customizer = length < 3 ? undefined : customizer;
-	      length = 1;
-	    }
-	    object = Object(object);
-	    while (++index < length) {
-	      var source = sources[index];
-	      if (source) {
-	        assigner(object, source, index, customizer);
-	      }
-	    }
-	    return object;
-	  });
-	}
-
-	module.exports = createAssigner;
-
-
-/***/ }),
-/* 257 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseExtremum = __webpack_require__(247),
-	    baseLt = __webpack_require__(258),
-	    identity = __webpack_require__(124);
-
-	/**
-	 * Computes the minimum value of `array`. If `array` is empty or falsey,
-	 * `undefined` is returned.
-	 *
-	 * @static
-	 * @since 0.1.0
-	 * @memberOf _
-	 * @category Math
-	 * @param {Array} array The array to iterate over.
-	 * @returns {*} Returns the minimum value.
-	 * @example
-	 *
-	 * _.min([4, 2, 8, 6]);
-	 * // => 2
-	 *
-	 * _.min([]);
-	 * // => undefined
-	 */
-	function min(array) {
-	  return (array && array.length)
-	    ? baseExtremum(array, identity, baseLt)
-	    : undefined;
-	}
-
-	module.exports = min;
-
-
-/***/ }),
-/* 258 */
-/***/ (function(module, exports) {
-
-	/**
-	 * The base implementation of `_.lt` which doesn't coerce arguments.
-	 *
-	 * @private
-	 * @param {*} value The value to compare.
-	 * @param {*} other The other value to compare.
-	 * @returns {boolean} Returns `true` if `value` is less than `other`,
-	 *  else `false`.
-	 */
-	function baseLt(value, other) {
-	  return value < other;
-	}
-
-	module.exports = baseLt;
-
-
-/***/ }),
-/* 259 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseExtremum = __webpack_require__(247),
-	    baseIteratee = __webpack_require__(127),
-	    baseLt = __webpack_require__(258);
-
-	/**
-	 * This method is like `_.min` except that it accepts `iteratee` which is
-	 * invoked for each element in `array` to generate the criterion by which
-	 * the value is ranked. The iteratee is invoked with one argument: (value).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.0.0
-	 * @category Math
-	 * @param {Array} array The array to iterate over.
-	 * @param {Function} [iteratee=_.identity] The iteratee invoked per element.
-	 * @returns {*} Returns the minimum value.
-	 * @example
-	 *
-	 * var objects = [{ 'n': 1 }, { 'n': 2 }];
-	 *
-	 * _.minBy(objects, function(o) { return o.n; });
-	 * // => { 'n': 1 }
-	 *
-	 * // The `_.property` iteratee shorthand.
-	 * _.minBy(objects, 'n');
-	 * // => { 'n': 1 }
-	 */
-	function minBy(array, iteratee) {
-	  return (array && array.length)
-	    ? baseExtremum(array, baseIteratee(iteratee, 2), baseLt)
-	    : undefined;
-	}
-
-	module.exports = minBy;
-
-
-/***/ }),
-/* 260 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var root = __webpack_require__(28);
-
-	/**
-	 * Gets the timestamp of the number of milliseconds that have elapsed since
-	 * the Unix epoch (1 January 1970 00:00:00 UTC).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 2.4.0
-	 * @category Date
-	 * @returns {number} Returns the timestamp.
-	 * @example
-	 *
-	 * _.defer(function(stamp) {
-	 *   console.log(_.now() - stamp);
-	 * }, _.now());
-	 * // => Logs the number of milliseconds it took for the deferred invocation.
-	 */
-	var now = function() {
-	  return root.Date.now();
-	};
-
-	module.exports = now;
-
-
-/***/ }),
-/* 261 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var basePick = __webpack_require__(262),
-	    flatRest = __webpack_require__(265);
-
-	/**
-	 * Creates an object composed of the picked `object` properties.
-	 *
-	 * @static
-	 * @since 0.1.0
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The source object.
-	 * @param {...(string|string[])} [paths] The property paths to pick.
-	 * @returns {Object} Returns the new object.
-	 * @example
-	 *
-	 * var object = { 'a': 1, 'b': '2', 'c': 3 };
-	 *
-	 * _.pick(object, ['a', 'c']);
-	 * // => { 'a': 1, 'c': 3 }
-	 */
-	var pick = flatRest(function(object, paths) {
-	  return object == null ? {} : basePick(object, paths);
-	});
-
-	module.exports = pick;
-
-
-/***/ }),
-/* 262 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var basePickBy = __webpack_require__(263),
-	    hasIn = __webpack_require__(158);
-
-	/**
-	 * The base implementation of `_.pick` without support for individual
-	 * property identifiers.
-	 *
-	 * @private
-	 * @param {Object} object The source object.
-	 * @param {string[]} paths The property paths to pick.
-	 * @returns {Object} Returns the new object.
-	 */
-	function basePick(object, paths) {
-	  return basePickBy(object, paths, function(value, path) {
-	    return hasIn(object, path);
-	  });
-	}
-
-	module.exports = basePick;
-
-
-/***/ }),
-/* 263 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseGet = __webpack_require__(147),
-	    baseSet = __webpack_require__(264),
-	    castPath = __webpack_require__(148);
-
-	/**
-	 * The base implementation of  `_.pickBy` without support for iteratee shorthands.
-	 *
-	 * @private
-	 * @param {Object} object The source object.
-	 * @param {string[]} paths The property paths to pick.
-	 * @param {Function} predicate The function invoked per property.
-	 * @returns {Object} Returns the new object.
-	 */
-	function basePickBy(object, paths, predicate) {
-	  var index = -1,
-	      length = paths.length,
-	      result = {};
-
-	  while (++index < length) {
-	    var path = paths[index],
-	        value = baseGet(object, path);
-
-	    if (predicate(value, path)) {
-	      baseSet(result, castPath(path, object), value);
-	    }
-	  }
-	  return result;
-	}
-
-	module.exports = basePickBy;
-
-
-/***/ }),
-/* 264 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var assignValue = __webpack_require__(53),
-	    castPath = __webpack_require__(148),
-	    isIndex = __webpack_require__(68),
-	    isObject = __webpack_require__(32),
-	    toKey = __webpack_require__(157);
-
-	/**
-	 * The base implementation of `_.set`.
-	 *
-	 * @private
-	 * @param {Object} object The object to modify.
-	 * @param {Array|string} path The path of the property to set.
-	 * @param {*} value The value to set.
-	 * @param {Function} [customizer] The function to customize path creation.
-	 * @returns {Object} Returns `object`.
-	 */
-	function baseSet(object, path, value, customizer) {
-	  if (!isObject(object)) {
-	    return object;
-	  }
-	  path = castPath(path, object);
-
-	  var index = -1,
-	      length = path.length,
-	      lastIndex = length - 1,
-	      nested = object;
-
-	  while (nested != null && ++index < length) {
-	    var key = toKey(path[index]),
-	        newValue = value;
-
-	    if (index != lastIndex) {
-	      var objValue = nested[key];
-	      newValue = customizer ? customizer(objValue, key, nested) : undefined;
-	      if (newValue === undefined) {
-	        newValue = isObject(objValue)
-	          ? objValue
-	          : (isIndex(path[index + 1]) ? [] : {});
-	      }
-	    }
-	    assignValue(nested, key, newValue);
-	    nested = nested[key];
-	  }
-	  return object;
-	}
-
-	module.exports = baseSet;
-
-
-/***/ }),
-/* 265 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var flatten = __webpack_require__(242),
-	    overRest = __webpack_require__(184),
-	    setToString = __webpack_require__(186);
-
-	/**
-	 * A specialized version of `baseRest` which flattens the rest array.
-	 *
-	 * @private
-	 * @param {Function} func The function to apply a rest parameter to.
-	 * @returns {Function} Returns the new function.
-	 */
-	function flatRest(func) {
-	  return setToString(overRest(func, undefined, flatten), func + '');
-	}
-
-	module.exports = flatRest;
-
-
-/***/ }),
-/* 266 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var createRange = __webpack_require__(267);
-
-	/**
-	 * Creates an array of numbers (positive and/or negative) progressing from
-	 * `start` up to, but not including, `end`. A step of `-1` is used if a negative
-	 * `start` is specified without an `end` or `step`. If `end` is not specified,
-	 * it's set to `start` with `start` then set to `0`.
-	 *
-	 * **Note:** JavaScript follows the IEEE-754 standard for resolving
-	 * floating-point values which can produce unexpected results.
-	 *
-	 * @static
-	 * @since 0.1.0
-	 * @memberOf _
-	 * @category Util
-	 * @param {number} [start=0] The start of the range.
-	 * @param {number} end The end of the range.
-	 * @param {number} [step=1] The value to increment or decrement by.
-	 * @returns {Array} Returns the range of numbers.
-	 * @see _.inRange, _.rangeRight
-	 * @example
-	 *
-	 * _.range(4);
-	 * // => [0, 1, 2, 3]
-	 *
-	 * _.range(-4);
-	 * // => [0, -1, -2, -3]
-	 *
-	 * _.range(1, 5);
-	 * // => [1, 2, 3, 4]
-	 *
-	 * _.range(0, 20, 5);
-	 * // => [0, 5, 10, 15]
-	 *
-	 * _.range(0, -4, -1);
-	 * // => [0, -1, -2, -3]
-	 *
-	 * _.range(1, 4, 0);
-	 * // => [1, 1, 1]
-	 *
-	 * _.range(0);
-	 * // => []
-	 */
-	var range = createRange();
-
-	module.exports = range;
-
-
-/***/ }),
-/* 267 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseRange = __webpack_require__(268),
-	    isIterateeCall = __webpack_require__(235),
-	    toFinite = __webpack_require__(240);
-
-	/**
-	 * Creates a `_.range` or `_.rangeRight` function.
-	 *
-	 * @private
-	 * @param {boolean} [fromRight] Specify iterating from right to left.
-	 * @returns {Function} Returns the new range function.
-	 */
-	function createRange(fromRight) {
-	  return function(start, end, step) {
-	    if (step && typeof step != 'number' && isIterateeCall(start, end, step)) {
-	      end = step = undefined;
-	    }
-	    // Ensure the sign of `-0` is preserved.
-	    start = toFinite(start);
-	    if (end === undefined) {
-	      end = start;
-	      start = 0;
-	    } else {
-	      end = toFinite(end);
-	    }
-	    step = step === undefined ? (start < end ? 1 : -1) : toFinite(step);
-	    return baseRange(start, end, step, fromRight);
-	  };
-	}
-
-	module.exports = createRange;
-
-
-/***/ }),
-/* 268 */
-/***/ (function(module, exports) {
-
-	/* Built-in method references for those with the same name as other `lodash` methods. */
-	var nativeCeil = Math.ceil,
-	    nativeMax = Math.max;
-
-	/**
-	 * The base implementation of `_.range` and `_.rangeRight` which doesn't
-	 * coerce arguments.
-	 *
-	 * @private
-	 * @param {number} start The start of the range.
-	 * @param {number} end The end of the range.
-	 * @param {number} step The value to increment or decrement by.
-	 * @param {boolean} [fromRight] Specify iterating from right to left.
-	 * @returns {Array} Returns the range of numbers.
-	 */
-	function baseRange(start, end, step, fromRight) {
-	  var index = -1,
-	      length = nativeMax(nativeCeil((end - start) / (step || 1)), 0),
-	      result = Array(length);
-
-	  while (length--) {
-	    result[fromRight ? length : ++index] = start;
-	    start += step;
-	  }
-	  return result;
-	}
-
-	module.exports = baseRange;
-
-
-/***/ }),
-/* 269 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var baseFlatten = __webpack_require__(181),
-	    baseOrderBy = __webpack_require__(270),
-	    baseRest = __webpack_require__(183),
-	    isIterateeCall = __webpack_require__(235);
-
-	/**
-	 * Creates an array of elements, sorted in ascending order by the results of
-	 * running each element in a collection thru each iteratee. This method
-	 * performs a stable sort, that is, it preserves the original sort order of
-	 * equal elements. The iteratees are invoked with one argument: (value).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.1.0
-	 * @category Collection
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {...(Function|Function[])} [iteratees=[_.identity]]
-	 *  The iteratees to sort by.
-	 * @returns {Array} Returns the new sorted array.
-	 * @example
-	 *
-	 * var users = [
-	 *   { 'user': 'fred',   'age': 48 },
-	 *   { 'user': 'barney', 'age': 36 },
-	 *   { 'user': 'fred',   'age': 40 },
-	 *   { 'user': 'barney', 'age': 34 }
-	 * ];
-	 *
-	 * _.sortBy(users, [function(o) { return o.user; }]);
-	 * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
-	 *
-	 * _.sortBy(users, ['user', 'age']);
-	 * // => objects for [['barney', 34], ['barney', 36], ['fred', 40], ['fred', 48]]
-	 */
-	var sortBy = baseRest(function(collection, iteratees) {
-	  if (collection == null) {
-	    return [];
-	  }
-	  var length = iteratees.length;
-	  if (length > 1 && isIterateeCall(collection, iteratees[0], iteratees[1])) {
-	    iteratees = [];
-	  } else if (length > 2 && isIterateeCall(iteratees[0], iteratees[1], iteratees[2])) {
-	    iteratees = [iteratees[0]];
-	  }
-	  return baseOrderBy(collection, baseFlatten(iteratees, 1), []);
-	});
-
-	module.exports = sortBy;
-
-
-/***/ }),
-/* 270 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var arrayMap = __webpack_require__(156),
-	    baseIteratee = __webpack_require__(127),
-	    baseMap = __webpack_require__(169),
-	    baseSortBy = __webpack_require__(271),
-	    baseUnary = __webpack_require__(72),
-	    compareMultiple = __webpack_require__(272),
-	    identity = __webpack_require__(124);
-
-	/**
-	 * The base implementation of `_.orderBy` without param guards.
-	 *
-	 * @private
-	 * @param {Array|Object} collection The collection to iterate over.
-	 * @param {Function[]|Object[]|string[]} iteratees The iteratees to sort by.
-	 * @param {string[]} orders The sort orders of `iteratees`.
-	 * @returns {Array} Returns the new sorted array.
-	 */
-	function baseOrderBy(collection, iteratees, orders) {
-	  var index = -1;
-	  iteratees = arrayMap(iteratees.length ? iteratees : [identity], baseUnary(baseIteratee));
-
-	  var result = baseMap(collection, function(value, key, collection) {
-	    var criteria = arrayMap(iteratees, function(iteratee) {
-	      return iteratee(value);
-	    });
-	    return { 'criteria': criteria, 'index': ++index, 'value': value };
-	  });
-
-	  return baseSortBy(result, function(object, other) {
-	    return compareMultiple(object, other, orders);
-	  });
-	}
-
-	module.exports = baseOrderBy;
-
-
-/***/ }),
-/* 271 */
-/***/ (function(module, exports) {
-
-	/**
-	 * The base implementation of `_.sortBy` which uses `comparer` to define the
-	 * sort order of `array` and replaces criteria objects with their corresponding
-	 * values.
-	 *
-	 * @private
-	 * @param {Array} array The array to sort.
-	 * @param {Function} comparer The function to define sort order.
-	 * @returns {Array} Returns `array`.
-	 */
-	function baseSortBy(array, comparer) {
-	  var length = array.length;
-
-	  array.sort(comparer);
-	  while (length--) {
-	    array[length] = array[length].value;
-	  }
-	  return array;
-	}
-
-	module.exports = baseSortBy;
-
-
-/***/ }),
-/* 272 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var compareAscending = __webpack_require__(273);
-
-	/**
-	 * Used by `_.orderBy` to compare multiple properties of a value to another
-	 * and stable sort them.
-	 *
-	 * If `orders` is unspecified, all values are sorted in ascending order. Otherwise,
-	 * specify an order of "desc" for descending or "asc" for ascending sort order
-	 * of corresponding values.
-	 *
-	 * @private
-	 * @param {Object} object The object to compare.
-	 * @param {Object} other The other object to compare.
-	 * @param {boolean[]|string[]} orders The order to sort by for each property.
-	 * @returns {number} Returns the sort order indicator for `object`.
-	 */
-	function compareMultiple(object, other, orders) {
-	  var index = -1,
-	      objCriteria = object.criteria,
-	      othCriteria = other.criteria,
-	      length = objCriteria.length,
-	      ordersLength = orders.length;
-
-	  while (++index < length) {
-	    var result = compareAscending(objCriteria[index], othCriteria[index]);
-	    if (result) {
-	      if (index >= ordersLength) {
-	        return result;
-	      }
-	      var order = orders[index];
-	      return result * (order == 'desc' ? -1 : 1);
-	    }
-	  }
-	  // Fixes an `Array#sort` bug in the JS engine embedded in Adobe applications
-	  // that causes it, under certain circumstances, to provide the same value for
-	  // `object` and `other`. See https://github.com/jashkenas/underscore/pull/1247
-	  // for more details.
-	  //
-	  // This also ensures a stable sort in V8 and other engines.
-	  // See https://bugs.chromium.org/p/v8/issues/detail?id=90 for more details.
-	  return object.index - other.index;
-	}
-
-	module.exports = compareMultiple;
-
-
-/***/ }),
-/* 273 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var isSymbol = __webpack_require__(150);
-
-	/**
-	 * Compares values to sort them in ascending order.
-	 *
-	 * @private
-	 * @param {*} value The value to compare.
-	 * @param {*} other The other value to compare.
-	 * @returns {number} Returns the sort order indicator for `value`.
-	 */
-	function compareAscending(value, other) {
-	  if (value !== other) {
-	    var valIsDefined = value !== undefined,
-	        valIsNull = value === null,
-	        valIsReflexive = value === value,
-	        valIsSymbol = isSymbol(value);
-
-	    var othIsDefined = other !== undefined,
-	        othIsNull = other === null,
-	        othIsReflexive = other === other,
-	        othIsSymbol = isSymbol(other);
-
-	    if ((!othIsNull && !othIsSymbol && !valIsSymbol && value > other) ||
-	        (valIsSymbol && othIsDefined && othIsReflexive && !othIsNull && !othIsSymbol) ||
-	        (valIsNull && othIsDefined && othIsReflexive) ||
-	        (!valIsDefined && othIsReflexive) ||
-	        !valIsReflexive) {
-	      return 1;
-	    }
-	    if ((!valIsNull && !valIsSymbol && !othIsSymbol && value < other) ||
-	        (othIsSymbol && valIsDefined && valIsReflexive && !valIsNull && !valIsSymbol) ||
-	        (othIsNull && valIsDefined && valIsReflexive) ||
-	        (!othIsDefined && valIsReflexive) ||
-	        !othIsReflexive) {
-	      return -1;
-	    }
-	  }
-	  return 0;
-	}
-
-	module.exports = compareAscending;
-
-
-/***/ }),
-/* 274 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var toString = __webpack_require__(154);
-
-	/** Used to generate unique IDs. */
-	var idCounter = 0;
-
-	/**
-	 * Generates a unique ID. If `prefix` is given, the ID is appended to it.
-	 *
-	 * @static
-	 * @since 0.1.0
-	 * @memberOf _
-	 * @category Util
-	 * @param {string} [prefix=''] The value to prefix the ID with.
-	 * @returns {string} Returns the unique ID.
-	 * @example
-	 *
-	 * _.uniqueId('contact_');
-	 * // => 'contact_104'
-	 *
-	 * _.uniqueId();
-	 * // => '105'
-	 */
-	function uniqueId(prefix) {
-	  var id = ++idCounter;
-	  return toString(prefix) + id;
-	}
-
-	module.exports = uniqueId;
-
-
-/***/ }),
-/* 275 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var assignValue = __webpack_require__(53),
-	    baseZipObject = __webpack_require__(276);
-
-	/**
-	 * This method is like `_.fromPairs` except that it accepts two arrays,
-	 * one of property identifiers and one of corresponding values.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.4.0
-	 * @category Array
-	 * @param {Array} [props=[]] The property identifiers.
-	 * @param {Array} [values=[]] The property values.
-	 * @returns {Object} Returns the new object.
-	 * @example
-	 *
-	 * _.zipObject(['a', 'b'], [1, 2]);
-	 * // => { 'a': 1, 'b': 2 }
-	 */
-	function zipObject(props, values) {
-	  return baseZipObject(props || [], values || [], assignValue);
-	}
-
-	module.exports = zipObject;
-
-
-/***/ }),
-/* 276 */
-/***/ (function(module, exports) {
-
-	/**
-	 * This base implementation of `_.zipObject` which assigns values using `assignFunc`.
-	 *
-	 * @private
-	 * @param {Array} props The property identifiers.
-	 * @param {Array} values The property values.
-	 * @param {Function} assignFunc The function to assign values.
-	 * @returns {Object} Returns the new object.
-	 */
-	function baseZipObject(props, values, assignFunc) {
-	  var index = -1,
-	      length = props.length,
-	      valsLength = values.length,
-	      result = {};
-
-	  while (++index < length) {
-	    var value = index < valsLength ? values[index] : undefined;
-	    assignFunc(result, props[index], value);
-	  }
-	  return result;
-	}
-
-	module.exports = baseZipObject;
-
-
-/***/ }),
-/* 277 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-	var greedyFAS = __webpack_require__(278);
-
-	module.exports = {
-	  run: run,
-	  undo: undo
-	};
-
-	function run(g) {
-	  var fas = (g.graph().acyclicer === "greedy"
-	    ? greedyFAS(g, weightFn(g))
-	    : dfsFAS(g));
-	  _.forEach(fas, function(e) {
-	    var label = g.edge(e);
-	    g.removeEdge(e);
-	    label.forwardName = e.name;
-	    label.reversed = true;
-	    g.setEdge(e.w, e.v, label, _.uniqueId("rev"));
-	  });
-
-	  function weightFn(g) {
-	    return function(e) {
-	      return g.edge(e).weight;
-	    };
-	  }
-	}
-
-	function dfsFAS(g) {
-	  var fas = [];
-	  var stack = {};
-	  var visited = {};
-
-	  function dfs(v) {
-	    if (_.has(visited, v)) {
-	      return;
-	    }
-	    visited[v] = true;
-	    stack[v] = true;
-	    _.forEach(g.outEdges(v), function(e) {
-	      if (_.has(stack, e.w)) {
-	        fas.push(e);
-	      } else {
-	        dfs(e.w);
-	      }
-	    });
-	    delete stack[v];
-	  }
-
-	  _.forEach(g.nodes(), dfs);
-	  return fas;
-	}
-
-	function undo(g) {
-	  _.forEach(g.edges(), function(e) {
-	    var label = g.edge(e);
-	    if (label.reversed) {
-	      g.removeEdge(e);
-
-	      var forwardName = label.forwardName;
-	      delete label.reversed;
-	      delete label.forwardName;
-	      g.setEdge(e.w, e.v, label, forwardName);
-	    }
-	  });
-	}
-
-
-/***/ }),
-/* 278 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-	var Graph = __webpack_require__(230).Graph;
-	var List = __webpack_require__(279);
-
-	/*
-	 * A greedy heuristic for finding a feedback arc set for a graph. A feedback
-	 * arc set is a set of edges that can be removed to make a graph acyclic.
-	 * The algorithm comes from: P. Eades, X. Lin, and W. F. Smyth, "A fast and
-	 * effective heuristic for the feedback arc set problem." This implementation
-	 * adjusts that from the paper to allow for weighted edges.
-	 */
-	module.exports = greedyFAS;
-
-	var DEFAULT_WEIGHT_FN = _.constant(1);
-
-	function greedyFAS(g, weightFn) {
-	  if (g.nodeCount() <= 1) {
-	    return [];
-	  }
-	  var state = buildState(g, weightFn || DEFAULT_WEIGHT_FN);
-	  var results = doGreedyFAS(state.graph, state.buckets, state.zeroIdx);
-
-	  // Expand multi-edges
-	  return _.flatten(_.map(results, function(e) {
-	    return g.outEdges(e.v, e.w);
-	  }), true);
-	}
-
-	function doGreedyFAS(g, buckets, zeroIdx) {
-	  var results = [];
-	  var sources = buckets[buckets.length - 1];
-	  var sinks = buckets[0];
-
-	  var entry;
-	  while (g.nodeCount()) {
-	    while ((entry = sinks.dequeue()))   { removeNode(g, buckets, zeroIdx, entry); }
-	    while ((entry = sources.dequeue())) { removeNode(g, buckets, zeroIdx, entry); }
-	    if (g.nodeCount()) {
-	      for (var i = buckets.length - 2; i > 0; --i) {
-	        entry = buckets[i].dequeue();
-	        if (entry) {
-	          results = results.concat(removeNode(g, buckets, zeroIdx, entry, true));
-	          break;
-	        }
-	      }
-	    }
-	  }
-
-	  return results;
-	}
-
-	function removeNode(g, buckets, zeroIdx, entry, collectPredecessors) {
-	  var results = collectPredecessors ? [] : undefined;
-
-	  _.forEach(g.inEdges(entry.v), function(edge) {
-	    var weight = g.edge(edge);
-	    var uEntry = g.node(edge.v);
-
-	    if (collectPredecessors) {
-	      results.push({ v: edge.v, w: edge.w });
-	    }
-
-	    uEntry.out -= weight;
-	    assignBucket(buckets, zeroIdx, uEntry);
-	  });
-
-	  _.forEach(g.outEdges(entry.v), function(edge) {
-	    var weight = g.edge(edge);
-	    var w = edge.w;
-	    var wEntry = g.node(w);
-	    wEntry["in"] -= weight;
-	    assignBucket(buckets, zeroIdx, wEntry);
-	  });
-
-	  g.removeNode(entry.v);
-
-	  return results;
-	}
-
-	function buildState(g, weightFn) {
-	  var fasGraph = new Graph();
-	  var maxIn = 0;
-	  var maxOut = 0;
-
-	  _.forEach(g.nodes(), function(v) {
-	    fasGraph.setNode(v, { v: v, "in": 0, out: 0 });
-	  });
-
-	  // Aggregate weights on nodes, but also sum the weights across multi-edges
-	  // into a single edge for the fasGraph.
-	  _.forEach(g.edges(), function(e) {
-	    var prevWeight = fasGraph.edge(e.v, e.w) || 0;
-	    var weight = weightFn(e);
-	    var edgeWeight = prevWeight + weight;
-	    fasGraph.setEdge(e.v, e.w, edgeWeight);
-	    maxOut = Math.max(maxOut, fasGraph.node(e.v).out += weight);
-	    maxIn  = Math.max(maxIn,  fasGraph.node(e.w)["in"]  += weight);
-	  });
-
-	  var buckets = _.range(maxOut + maxIn + 3).map(function() { return new List(); });
-	  var zeroIdx = maxIn + 1;
-
-	  _.forEach(fasGraph.nodes(), function(v) {
-	    assignBucket(buckets, zeroIdx, fasGraph.node(v));
-	  });
-
-	  return { graph: fasGraph, buckets: buckets, zeroIdx: zeroIdx };
-	}
-
-	function assignBucket(buckets, zeroIdx, entry) {
-	  if (!entry.out) {
-	    buckets[0].enqueue(entry);
-	  } else if (!entry["in"]) {
-	    buckets[buckets.length - 1].enqueue(entry);
-	  } else {
-	    buckets[entry.out - entry["in"] + zeroIdx].enqueue(entry);
-	  }
-	}
-
-
-/***/ }),
-/* 279 */
-/***/ (function(module, exports) {
-
-	/*
-	 * Simple doubly linked list implementation derived from Cormen, et al.,
-	 * "Introduction to Algorithms".
-	 */
-
-	module.exports = List;
-
-	function List() {
-	  var sentinel = {};
-	  sentinel._next = sentinel._prev = sentinel;
-	  this._sentinel = sentinel;
-	}
-
-	List.prototype.dequeue = function() {
-	  var sentinel = this._sentinel;
-	  var entry = sentinel._prev;
-	  if (entry !== sentinel) {
-	    unlink(entry);
-	    return entry;
-	  }
-	};
-
-	List.prototype.enqueue = function(entry) {
-	  var sentinel = this._sentinel;
-	  if (entry._prev && entry._next) {
-	    unlink(entry);
-	  }
-	  entry._next = sentinel._next;
-	  sentinel._next._prev = entry;
-	  sentinel._next = entry;
-	  entry._prev = sentinel;
-	};
-
-	List.prototype.toString = function() {
-	  var strs = [];
-	  var sentinel = this._sentinel;
-	  var curr = sentinel._prev;
-	  while (curr !== sentinel) {
-	    strs.push(JSON.stringify(curr, filterOutLinks));
-	    curr = curr._prev;
-	  }
-	  return "[" + strs.join(", ") + "]";
-	};
-
-	function unlink(entry) {
-	  entry._prev._next = entry._next;
-	  entry._next._prev = entry._prev;
-	  delete entry._next;
-	  delete entry._prev;
-	}
-
-	function filterOutLinks(k, v) {
-	  if (k !== "_next" && k !== "_prev") {
-	    return v;
-	  }
-	}
-
-
-/***/ }),
-/* 280 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-	var util = __webpack_require__(281);
-
-	module.exports = {
-	  run: run,
-	  undo: undo
-	};
-
-	/*
-	 * Breaks any long edges in the graph into short segments that span 1 layer
-	 * each. This operation is undoable with the denormalize function.
-	 *
-	 * Pre-conditions:
-	 *
-	 *    1. The input graph is a DAG.
-	 *    2. Each node in the graph has a "rank" property.
-	 *
-	 * Post-condition:
-	 *
-	 *    1. All edges in the graph have a length of 1.
-	 *    2. Dummy nodes are added where edges have been split into segments.
-	 *    3. The graph is augmented with a "dummyChains" attribute which contains
-	 *       the first dummy in each chain of dummy nodes produced.
-	 */
-	function run(g) {
-	  g.graph().dummyChains = [];
-	  _.forEach(g.edges(), function(edge) { normalizeEdge(g, edge); });
-	}
-
-	function normalizeEdge(g, e) {
-	  var v = e.v;
-	  var vRank = g.node(v).rank;
-	  var w = e.w;
-	  var wRank = g.node(w).rank;
-	  var name = e.name;
-	  var edgeLabel = g.edge(e);
-	  var labelRank = edgeLabel.labelRank;
-
-	  if (wRank === vRank + 1) return;
-
-	  g.removeEdge(e);
-
-	  var dummy, attrs, i;
-	  for (i = 0, ++vRank; vRank < wRank; ++i, ++vRank) {
-	    edgeLabel.points = [];
-	    attrs = {
-	      width: 0, height: 0,
-	      edgeLabel: edgeLabel, edgeObj: e,
-	      rank: vRank
-	    };
-	    dummy = util.addDummyNode(g, "edge", attrs, "_d");
-	    if (vRank === labelRank) {
-	      attrs.width = edgeLabel.width;
-	      attrs.height = edgeLabel.height;
-	      attrs.dummy = "edge-label";
-	      attrs.labelpos = edgeLabel.labelpos;
-	    }
-	    g.setEdge(v, dummy, { weight: edgeLabel.weight }, name);
-	    if (i === 0) {
-	      g.graph().dummyChains.push(dummy);
-	    }
-	    v = dummy;
-	  }
-
-	  g.setEdge(v, w, { weight: edgeLabel.weight }, name);
-	}
-
-	function undo(g) {
-	  _.forEach(g.graph().dummyChains, function(v) {
-	    var node = g.node(v);
-	    var origLabel = node.edgeLabel;
-	    var w;
-	    g.setEdge(node.edgeObj, origLabel);
-	    while (node.dummy) {
-	      w = g.successors(v)[0];
-	      g.removeNode(v);
-	      origLabel.points.push({ x: node.x, y: node.y });
-	      if (node.dummy === "edge-label") {
-	        origLabel.x = node.x;
-	        origLabel.y = node.y;
-	        origLabel.width = node.width;
-	        origLabel.height = node.height;
-	      }
-	      v = w;
-	      node = g.node(v);
-	    }
-	  });
-	}
-
-
-/***/ }),
-/* 281 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	/* eslint "no-console": off */
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-	var Graph = __webpack_require__(230).Graph;
-
-	module.exports = {
-	  addDummyNode: addDummyNode,
-	  simplify: simplify,
-	  asNonCompoundGraph: asNonCompoundGraph,
-	  successorWeights: successorWeights,
-	  predecessorWeights: predecessorWeights,
-	  intersectRect: intersectRect,
-	  buildLayerMatrix: buildLayerMatrix,
-	  normalizeRanks: normalizeRanks,
-	  removeEmptyRanks: removeEmptyRanks,
-	  addBorderNode: addBorderNode,
-	  maxRank: maxRank,
-	  partition: partition,
-	  time: time,
-	  notime: notime
-	};
-
-	/*
-	 * Adds a dummy node to the graph and return v.
-	 */
-	function addDummyNode(g, type, attrs, name) {
-	  var v;
-	  do {
-	    v = _.uniqueId(name);
-	  } while (g.hasNode(v));
-
-	  attrs.dummy = type;
-	  g.setNode(v, attrs);
-	  return v;
-	}
-
-	/*
-	 * Returns a new graph with only simple edges. Handles aggregation of data
-	 * associated with multi-edges.
-	 */
-	function simplify(g) {
-	  var simplified = new Graph().setGraph(g.graph());
-	  _.forEach(g.nodes(), function(v) { simplified.setNode(v, g.node(v)); });
-	  _.forEach(g.edges(), function(e) {
-	    var simpleLabel = simplified.edge(e.v, e.w) || { weight: 0, minlen: 1 };
-	    var label = g.edge(e);
-	    simplified.setEdge(e.v, e.w, {
-	      weight: simpleLabel.weight + label.weight,
-	      minlen: Math.max(simpleLabel.minlen, label.minlen)
-	    });
-	  });
-	  return simplified;
-	}
-
-	function asNonCompoundGraph(g) {
-	  var simplified = new Graph({ multigraph: g.isMultigraph() }).setGraph(g.graph());
-	  _.forEach(g.nodes(), function(v) {
-	    if (!g.children(v).length) {
-	      simplified.setNode(v, g.node(v));
-	    }
-	  });
-	  _.forEach(g.edges(), function(e) {
-	    simplified.setEdge(e, g.edge(e));
-	  });
-	  return simplified;
-	}
-
-	function successorWeights(g) {
-	  var weightMap = _.map(g.nodes(), function(v) {
-	    var sucs = {};
-	    _.forEach(g.outEdges(v), function(e) {
-	      sucs[e.w] = (sucs[e.w] || 0) + g.edge(e).weight;
-	    });
-	    return sucs;
-	  });
-	  return _.zipObject(g.nodes(), weightMap);
-	}
-
-	function predecessorWeights(g) {
-	  var weightMap = _.map(g.nodes(), function(v) {
-	    var preds = {};
-	    _.forEach(g.inEdges(v), function(e) {
-	      preds[e.v] = (preds[e.v] || 0) + g.edge(e).weight;
-	    });
-	    return preds;
-	  });
-	  return _.zipObject(g.nodes(), weightMap);
-	}
-
-	/*
-	 * Finds where a line starting at point ({x, y}) would intersect a rectangle
-	 * ({x, y, width, height}) if it were pointing at the rectangle's center.
-	 */
-	function intersectRect(rect, point) {
-	  var x = rect.x;
-	  var y = rect.y;
-
-	  // Rectangle intersection algorithm from:
-	  // http://math.stackexchange.com/questions/108113/find-edge-between-two-boxes
-	  var dx = point.x - x;
-	  var dy = point.y - y;
-	  var w = rect.width / 2;
-	  var h = rect.height / 2;
-
-	  if (!dx && !dy) {
-	    throw new Error("Not possible to find intersection inside of the rectangle");
-	  }
-
-	  var sx, sy;
-	  if (Math.abs(dy) * w > Math.abs(dx) * h) {
-	    // Intersection is top or bottom of rect.
-	    if (dy < 0) {
-	      h = -h;
-	    }
-	    sx = h * dx / dy;
-	    sy = h;
-	  } else {
-	    // Intersection is left or right of rect.
-	    if (dx < 0) {
-	      w = -w;
-	    }
-	    sx = w;
-	    sy = w * dy / dx;
-	  }
-
-	  return { x: x + sx, y: y + sy };
-	}
-
-	/*
-	 * Given a DAG with each node assigned "rank" and "order" properties, this
-	 * function will produce a matrix with the ids of each node.
-	 */
-	function buildLayerMatrix(g) {
-	  var layering = _.map(_.range(maxRank(g) + 1), function() { return []; });
-	  _.forEach(g.nodes(), function(v) {
-	    var node = g.node(v);
-	    var rank = node.rank;
-	    if (!_.isUndefined(rank)) {
-	      layering[rank][node.order] = v;
-	    }
-	  });
-	  return layering;
-	}
-
-	/*
-	 * Adjusts the ranks for all nodes in the graph such that all nodes v have
-	 * rank(v) >= 0 and at least one node w has rank(w) = 0.
-	 */
-	function normalizeRanks(g) {
-	  var min = _.min(_.map(g.nodes(), function(v) { return g.node(v).rank; }));
-	  _.forEach(g.nodes(), function(v) {
-	    var node = g.node(v);
-	    if (_.has(node, "rank")) {
-	      node.rank -= min;
-	    }
-	  });
-	}
-
-	function removeEmptyRanks(g) {
-	  // Ranks may not start at 0, so we need to offset them
-	  var offset = _.min(_.map(g.nodes(), function(v) { return g.node(v).rank; }));
-
-	  var layers = [];
-	  _.forEach(g.nodes(), function(v) {
-	    var rank = g.node(v).rank - offset;
-	    if (!layers[rank]) {
-	      layers[rank] = [];
-	    }
-	    layers[rank].push(v);
-	  });
-
-	  var delta = 0;
-	  var nodeRankFactor = g.graph().nodeRankFactor;
-	  _.forEach(layers, function(vs, i) {
-	    if (_.isUndefined(vs) && i % nodeRankFactor !== 0) {
-	      --delta;
-	    } else if (delta) {
-	      _.forEach(vs, function(v) { g.node(v).rank += delta; });
-	    }
-	  });
-	}
-
-	function addBorderNode(g, prefix, rank, order) {
-	  var node = {
-	    width: 0,
-	    height: 0
-	  };
-	  if (arguments.length >= 4) {
-	    node.rank = rank;
-	    node.order = order;
-	  }
-	  return addDummyNode(g, "border", node, prefix);
-	}
-
-	function maxRank(g) {
-	  return _.max(_.map(g.nodes(), function(v) {
-	    var rank = g.node(v).rank;
-	    if (!_.isUndefined(rank)) {
-	      return rank;
-	    }
-	  }));
-	}
-
-	/*
-	 * Partition a collection into two groups: `lhs` and `rhs`. If the supplied
-	 * function returns true for an entry it goes into `lhs`. Otherwise it goes
-	 * into `rhs.
-	 */
-	function partition(collection, fn) {
-	  var result = { lhs: [], rhs: [] };
-	  _.forEach(collection, function(value) {
-	    if (fn(value)) {
-	      result.lhs.push(value);
-	    } else {
-	      result.rhs.push(value);
-	    }
-	  });
-	  return result;
-	}
-
-	/*
-	 * Returns a new function that wraps `fn` with a timer. The wrapper logs the
-	 * time it takes to execute the function.
-	 */
-	function time(name, fn) {
-	  var start = _.now();
-	  try {
-	    return fn();
-	  } finally {
-	    console.log(name + " time: " + (_.now() - start) + "ms");
-	  }
-	}
-
-	function notime(name, fn) {
-	  return fn();
-	}
-
-
-/***/ }),
-/* 282 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var rankUtil = __webpack_require__(283);
-	var longestPath = rankUtil.longestPath;
-	var feasibleTree = __webpack_require__(284);
-	var networkSimplex = __webpack_require__(285);
-
-	module.exports = rank;
-
-	/*
-	 * Assigns a rank to each node in the input graph that respects the "minlen"
-	 * constraint specified on edges between nodes.
-	 *
-	 * This basic structure is derived from Gansner, et al., "A Technique for
-	 * Drawing Directed Graphs."
-	 *
-	 * Pre-conditions:
-	 *
-	 *    1. Graph must be a connected DAG
-	 *    2. Graph nodes must be objects
-	 *    3. Graph edges must have "weight" and "minlen" attributes
-	 *
-	 * Post-conditions:
-	 *
-	 *    1. Graph nodes will have a "rank" attribute based on the results of the
-	 *       algorithm. Ranks can start at any index (including negative), we'll
-	 *       fix them up later.
-	 */
-	function rank(g) {
-	  switch(g.graph().ranker) {
-	  case "network-simplex": networkSimplexRanker(g); break;
-	  case "tight-tree": tightTreeRanker(g); break;
-	  case "longest-path": longestPathRanker(g); break;
-	  default: networkSimplexRanker(g);
-	  }
-	}
-
-	// A fast and simple ranker, but results are far from optimal.
-	var longestPathRanker = longestPath;
-
-	function tightTreeRanker(g) {
-	  longestPath(g);
-	  feasibleTree(g);
-	}
-
-	function networkSimplexRanker(g) {
-	  networkSimplex(g);
-	}
-
-
-/***/ }),
-/* 283 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-
-	module.exports = {
-	  longestPath: longestPath,
-	  slack: slack
-	};
-
-	/*
-	 * Initializes ranks for the input graph using the longest path algorithm. This
-	 * algorithm scales well and is fast in practice, it yields rather poor
-	 * solutions. Nodes are pushed to the lowest layer possible, leaving the bottom
-	 * ranks wide and leaving edges longer than necessary. However, due to its
-	 * speed, this algorithm is good for getting an initial ranking that can be fed
-	 * into other algorithms.
-	 *
-	 * This algorithm does not normalize layers because it will be used by other
-	 * algorithms in most cases. If using this algorithm directly, be sure to
-	 * run normalize at the end.
-	 *
-	 * Pre-conditions:
-	 *
-	 *    1. Input graph is a DAG.
-	 *    2. Input graph node labels can be assigned properties.
-	 *
-	 * Post-conditions:
-	 *
-	 *    1. Each node will be assign an (unnormalized) "rank" property.
-	 */
-	function longestPath(g) {
-	  var visited = {};
-
-	  function dfs(v) {
-	    var label = g.node(v);
-	    if (_.has(visited, v)) {
-	      return label.rank;
-	    }
-	    visited[v] = true;
-
-	    var rank = _.min(_.map(g.outEdges(v), function(e) {
-	      return dfs(e.w) - g.edge(e).minlen;
-	    }));
-
-	    if (rank === Number.POSITIVE_INFINITY || // return value of _.map([]) for Lodash 3
-	        rank === undefined || // return value of _.map([]) for Lodash 4
-	        rank === null) { // return value of _.map([null])
-	      rank = 0;
-	    }
-
-	    return (label.rank = rank);
-	  }
-
-	  _.forEach(g.sources(), dfs);
-	}
-
-	/*
-	 * Returns the amount of slack for the given edge. The slack is defined as the
-	 * difference between the length of the edge and its minimum length.
-	 */
-	function slack(g, e) {
-	  return g.node(e.w).rank - g.node(e.v).rank - g.edge(e).minlen;
-	}
-
-
-/***/ }),
-/* 284 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-	var Graph = __webpack_require__(230).Graph;
-	var slack = __webpack_require__(283).slack;
-
-	module.exports = feasibleTree;
-
-	/*
-	 * Constructs a spanning tree with tight edges and adjusted the input node's
-	 * ranks to achieve this. A tight edge is one that is has a length that matches
-	 * its "minlen" attribute.
-	 *
-	 * The basic structure for this function is derived from Gansner, et al., "A
-	 * Technique for Drawing Directed Graphs."
-	 *
-	 * Pre-conditions:
-	 *
-	 *    1. Graph must be a DAG.
-	 *    2. Graph must be connected.
-	 *    3. Graph must have at least one node.
-	 *    5. Graph nodes must have been previously assigned a "rank" property that
-	 *       respects the "minlen" property of incident edges.
-	 *    6. Graph edges must have a "minlen" property.
-	 *
-	 * Post-conditions:
-	 *
-	 *    - Graph nodes will have their rank adjusted to ensure that all edges are
-	 *      tight.
-	 *
-	 * Returns a tree (undirected graph) that is constructed using only "tight"
-	 * edges.
-	 */
-	function feasibleTree(g) {
-	  var t = new Graph({ directed: false });
-
-	  // Choose arbitrary node from which to start our tree
-	  var start = g.nodes()[0];
-	  var size = g.nodeCount();
-	  t.setNode(start, {});
-
-	  var edge, delta;
-	  while (tightTree(t, g) < size) {
-	    edge = findMinSlackEdge(t, g);
-	    delta = t.hasNode(edge.v) ? slack(g, edge) : -slack(g, edge);
-	    shiftRanks(t, g, delta);
-	  }
-
-	  return t;
-	}
-
-	/*
-	 * Finds a maximal tree of tight edges and returns the number of nodes in the
-	 * tree.
-	 */
-	function tightTree(t, g) {
-	  function dfs(v) {
-	    _.forEach(g.nodeEdges(v), function(e) {
-	      var edgeV = e.v,
-	        w = (v === edgeV) ? e.w : edgeV;
-	      if (!t.hasNode(w) && !slack(g, e)) {
-	        t.setNode(w, {});
-	        t.setEdge(v, w, {});
-	        dfs(w);
-	      }
-	    });
-	  }
-
-	  _.forEach(t.nodes(), dfs);
-	  return t.nodeCount();
-	}
-
-	/*
-	 * Finds the edge with the smallest slack that is incident on tree and returns
-	 * it.
-	 */
-	function findMinSlackEdge(t, g) {
-	  return _.minBy(g.edges(), function(e) {
-	    if (t.hasNode(e.v) !== t.hasNode(e.w)) {
-	      return slack(g, e);
-	    }
-	  });
-	}
-
-	function shiftRanks(t, g, delta) {
-	  _.forEach(t.nodes(), function(v) {
-	    g.node(v).rank += delta;
-	  });
-	}
-
-
-/***/ }),
-/* 285 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-	var feasibleTree = __webpack_require__(284);
-	var slack = __webpack_require__(283).slack;
-	var initRank = __webpack_require__(283).longestPath;
-	var preorder = __webpack_require__(230).alg.preorder;
-	var postorder = __webpack_require__(230).alg.postorder;
-	var simplify = __webpack_require__(281).simplify;
-
-	module.exports = networkSimplex;
-
-	// Expose some internals for testing purposes
-	networkSimplex.initLowLimValues = initLowLimValues;
-	networkSimplex.initCutValues = initCutValues;
-	networkSimplex.calcCutValue = calcCutValue;
-	networkSimplex.leaveEdge = leaveEdge;
-	networkSimplex.enterEdge = enterEdge;
-	networkSimplex.exchangeEdges = exchangeEdges;
-
-	/*
-	 * The network simplex algorithm assigns ranks to each node in the input graph
-	 * and iteratively improves the ranking to reduce the length of edges.
-	 *
-	 * Preconditions:
-	 *
-	 *    1. The input graph must be a DAG.
-	 *    2. All nodes in the graph must have an object value.
-	 *    3. All edges in the graph must have "minlen" and "weight" attributes.
-	 *
-	 * Postconditions:
-	 *
-	 *    1. All nodes in the graph will have an assigned "rank" attribute that has
-	 *       been optimized by the network simplex algorithm. Ranks start at 0.
-	 *
-	 *
-	 * A rough sketch of the algorithm is as follows:
-	 *
-	 *    1. Assign initial ranks to each node. We use the longest path algorithm,
-	 *       which assigns ranks to the lowest position possible. In general this
-	 *       leads to very wide bottom ranks and unnecessarily long edges.
-	 *    2. Construct a feasible tight tree. A tight tree is one such that all
-	 *       edges in the tree have no slack (difference between length of edge
-	 *       and minlen for the edge). This by itself greatly improves the assigned
-	 *       rankings by shorting edges.
-	 *    3. Iteratively find edges that have negative cut values. Generally a
-	 *       negative cut value indicates that the edge could be removed and a new
-	 *       tree edge could be added to produce a more compact graph.
-	 *
-	 * Much of the algorithms here are derived from Gansner, et al., "A Technique
-	 * for Drawing Directed Graphs." The structure of the file roughly follows the
-	 * structure of the overall algorithm.
-	 */
-	function networkSimplex(g) {
-	  g = simplify(g);
-	  initRank(g);
-	  var t = feasibleTree(g);
-	  initLowLimValues(t);
-	  initCutValues(t, g);
-
-	  var e, f;
-	  while ((e = leaveEdge(t))) {
-	    f = enterEdge(t, g, e);
-	    exchangeEdges(t, g, e, f);
-	  }
-	}
-
-	/*
-	 * Initializes cut values for all edges in the tree.
-	 */
-	function initCutValues(t, g) {
-	  var vs = postorder(t, t.nodes());
-	  vs = vs.slice(0, vs.length - 1);
-	  _.forEach(vs, function(v) {
-	    assignCutValue(t, g, v);
-	  });
-	}
-
-	function assignCutValue(t, g, child) {
-	  var childLab = t.node(child);
-	  var parent = childLab.parent;
-	  t.edge(child, parent).cutvalue = calcCutValue(t, g, child);
-	}
-
-	/*
-	 * Given the tight tree, its graph, and a child in the graph calculate and
-	 * return the cut value for the edge between the child and its parent.
-	 */
-	function calcCutValue(t, g, child) {
-	  var childLab = t.node(child);
-	  var parent = childLab.parent;
-	  // True if the child is on the tail end of the edge in the directed graph
-	  var childIsTail = true;
-	  // The graph's view of the tree edge we're inspecting
-	  var graphEdge = g.edge(child, parent);
-	  // The accumulated cut value for the edge between this node and its parent
-	  var cutValue = 0;
-
-	  if (!graphEdge) {
-	    childIsTail = false;
-	    graphEdge = g.edge(parent, child);
-	  }
-
-	  cutValue = graphEdge.weight;
-
-	  _.forEach(g.nodeEdges(child), function(e) {
-	    var isOutEdge = e.v === child,
-	      other = isOutEdge ? e.w : e.v;
-
-	    if (other !== parent) {
-	      var pointsToHead = isOutEdge === childIsTail,
-	        otherWeight = g.edge(e).weight;
-
-	      cutValue += pointsToHead ? otherWeight : -otherWeight;
-	      if (isTreeEdge(t, child, other)) {
-	        var otherCutValue = t.edge(child, other).cutvalue;
-	        cutValue += pointsToHead ? -otherCutValue : otherCutValue;
-	      }
-	    }
-	  });
-
-	  return cutValue;
-	}
-
-	function initLowLimValues(tree, root) {
-	  if (arguments.length < 2) {
-	    root = tree.nodes()[0];
-	  }
-	  dfsAssignLowLim(tree, {}, 1, root);
-	}
-
-	function dfsAssignLowLim(tree, visited, nextLim, v, parent) {
-	  var low = nextLim;
-	  var label = tree.node(v);
-
-	  visited[v] = true;
-	  _.forEach(tree.neighbors(v), function(w) {
-	    if (!_.has(visited, w)) {
-	      nextLim = dfsAssignLowLim(tree, visited, nextLim, w, v);
-	    }
-	  });
-
-	  label.low = low;
-	  label.lim = nextLim++;
-	  if (parent) {
-	    label.parent = parent;
-	  } else {
-	    // TODO should be able to remove this when we incrementally update low lim
-	    delete label.parent;
-	  }
-
-	  return nextLim;
-	}
-
-	function leaveEdge(tree) {
-	  return _.find(tree.edges(), function(e) {
-	    return tree.edge(e).cutvalue < 0;
-	  });
-	}
-
-	function enterEdge(t, g, edge) {
-	  var v = edge.v;
-	  var w = edge.w;
-
-	  // For the rest of this function we assume that v is the tail and w is the
-	  // head, so if we don't have this edge in the graph we should flip it to
-	  // match the correct orientation.
-	  if (!g.hasEdge(v, w)) {
-	    v = edge.w;
-	    w = edge.v;
-	  }
-
-	  var vLabel = t.node(v);
-	  var wLabel = t.node(w);
-	  var tailLabel = vLabel;
-	  var flip = false;
-
-	  // If the root is in the tail of the edge then we need to flip the logic that
-	  // checks for the head and tail nodes in the candidates function below.
-	  if (vLabel.lim > wLabel.lim) {
-	    tailLabel = wLabel;
-	    flip = true;
-	  }
-
-	  var candidates = _.filter(g.edges(), function(edge) {
-	    return flip === isDescendant(t, t.node(edge.v), tailLabel) &&
-	           flip !== isDescendant(t, t.node(edge.w), tailLabel);
-	  });
-
-	  return _.minBy(candidates, function(edge) { return slack(g, edge); });
-	}
-
-	function exchangeEdges(t, g, e, f) {
-	  var v = e.v;
-	  var w = e.w;
-	  t.removeEdge(v, w);
-	  t.setEdge(f.v, f.w, {});
-	  initLowLimValues(t);
-	  initCutValues(t, g);
-	  updateRanks(t, g);
-	}
-
-	function updateRanks(t, g) {
-	  var root = _.find(t.nodes(), function(v) { return !g.node(v).parent; });
-	  var vs = preorder(t, root);
-	  vs = vs.slice(1);
-	  _.forEach(vs, function(v) {
-	    var parent = t.node(v).parent,
-	      edge = g.edge(v, parent),
-	      flipped = false;
-
-	    if (!edge) {
-	      edge = g.edge(parent, v);
-	      flipped = true;
-	    }
-
-	    g.node(v).rank = g.node(parent).rank + (flipped ? edge.minlen : -edge.minlen);
-	  });
-	}
-
-	/*
-	 * Returns true if the edge is in the tree.
-	 */
-	function isTreeEdge(tree, u, v) {
-	  return tree.hasEdge(u, v);
-	}
-
-	/*
-	 * Returns true if the specified node is descendant of the root node per the
-	 * assigned low and lim attributes in the tree.
-	 */
-	function isDescendant(tree, vLabel, rootLabel) {
-	  return rootLabel.low <= vLabel.lim && vLabel.lim <= rootLabel.lim;
-	}
-
-
-/***/ }),
-/* 286 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-
-	module.exports = parentDummyChains;
-
-	function parentDummyChains(g) {
-	  var postorderNums = postorder(g);
-
-	  _.forEach(g.graph().dummyChains, function(v) {
-	    var node = g.node(v);
-	    var edgeObj = node.edgeObj;
-	    var pathData = findPath(g, postorderNums, edgeObj.v, edgeObj.w);
-	    var path = pathData.path;
-	    var lca = pathData.lca;
-	    var pathIdx = 0;
-	    var pathV = path[pathIdx];
-	    var ascending = true;
-
-	    while (v !== edgeObj.w) {
-	      node = g.node(v);
-
-	      if (ascending) {
-	        while ((pathV = path[pathIdx]) !== lca &&
-	               g.node(pathV).maxRank < node.rank) {
-	          pathIdx++;
-	        }
-
-	        if (pathV === lca) {
-	          ascending = false;
-	        }
-	      }
-
-	      if (!ascending) {
-	        while (pathIdx < path.length - 1 &&
-	               g.node(pathV = path[pathIdx + 1]).minRank <= node.rank) {
-	          pathIdx++;
-	        }
-	        pathV = path[pathIdx];
-	      }
-
-	      g.setParent(v, pathV);
-	      v = g.successors(v)[0];
-	    }
-	  });
-	}
-
-	// Find a path from v to w through the lowest common ancestor (LCA). Return the
-	// full path and the LCA.
-	function findPath(g, postorderNums, v, w) {
-	  var vPath = [];
-	  var wPath = [];
-	  var low = Math.min(postorderNums[v].low, postorderNums[w].low);
-	  var lim = Math.max(postorderNums[v].lim, postorderNums[w].lim);
-	  var parent;
-	  var lca;
-
-	  // Traverse up from v to find the LCA
-	  parent = v;
-	  do {
-	    parent = g.parent(parent);
-	    vPath.push(parent);
-	  } while (parent &&
-	           (postorderNums[parent].low > low || lim > postorderNums[parent].lim));
-	  lca = parent;
-
-	  // Traverse from w to LCA
-	  parent = w;
-	  while ((parent = g.parent(parent)) !== lca) {
-	    wPath.push(parent);
-	  }
-
-	  return { path: vPath.concat(wPath.reverse()), lca: lca };
-	}
-
-	function postorder(g) {
-	  var result = {};
-	  var lim = 0;
-
-	  function dfs(v) {
-	    var low = lim;
-	    _.forEach(g.children(v), dfs);
-	    result[v] = { low: low, lim: lim++ };
-	  }
-	  _.forEach(g.children(), dfs);
-
-	  return result;
-	}
-
-
-/***/ }),
-/* 287 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-	var util = __webpack_require__(281);
-
-	module.exports = {
-	  run: run,
-	  cleanup: cleanup
-	};
-
-	/*
-	 * A nesting graph creates dummy nodes for the tops and bottoms of subgraphs,
-	 * adds appropriate edges to ensure that all cluster nodes are placed between
-	 * these boundries, and ensures that the graph is connected.
-	 *
-	 * In addition we ensure, through the use of the minlen property, that nodes
-	 * and subgraph border nodes to not end up on the same rank.
-	 *
-	 * Preconditions:
-	 *
-	 *    1. Input graph is a DAG
-	 *    2. Nodes in the input graph has a minlen attribute
-	 *
-	 * Postconditions:
-	 *
-	 *    1. Input graph is connected.
-	 *    2. Dummy nodes are added for the tops and bottoms of subgraphs.
-	 *    3. The minlen attribute for nodes is adjusted to ensure nodes do not
-	 *       get placed on the same rank as subgraph border nodes.
-	 *
-	 * The nesting graph idea comes from Sander, "Layout of Compound Directed
-	 * Graphs."
-	 */
-	function run(g) {
-	  var root = util.addDummyNode(g, "root", {}, "_root");
-	  var depths = treeDepths(g);
-	  var height = _.max(_.values(depths)) - 1; // Note: depths is an Object not an array
-	  var nodeSep = 2 * height + 1;
-
-	  g.graph().nestingRoot = root;
-
-	  // Multiply minlen by nodeSep to align nodes on non-border ranks.
-	  _.forEach(g.edges(), function(e) { g.edge(e).minlen *= nodeSep; });
-
-	  // Calculate a weight that is sufficient to keep subgraphs vertically compact
-	  var weight = sumWeights(g) + 1;
-
-	  // Create border nodes and link them up
-	  _.forEach(g.children(), function(child) {
-	    dfs(g, root, nodeSep, weight, height, depths, child);
-	  });
-
-	  // Save the multiplier for node layers for later removal of empty border
-	  // layers.
-	  g.graph().nodeRankFactor = nodeSep;
-	}
-
-	function dfs(g, root, nodeSep, weight, height, depths, v) {
-	  var children = g.children(v);
-	  if (!children.length) {
-	    if (v !== root) {
-	      g.setEdge(root, v, { weight: 0, minlen: nodeSep });
-	    }
-	    return;
-	  }
-
-	  var top = util.addBorderNode(g, "_bt");
-	  var bottom = util.addBorderNode(g, "_bb");
-	  var label = g.node(v);
-
-	  g.setParent(top, v);
-	  label.borderTop = top;
-	  g.setParent(bottom, v);
-	  label.borderBottom = bottom;
-
-	  _.forEach(children, function(child) {
-	    dfs(g, root, nodeSep, weight, height, depths, child);
-
-	    var childNode = g.node(child);
-	    var childTop = childNode.borderTop ? childNode.borderTop : child;
-	    var childBottom = childNode.borderBottom ? childNode.borderBottom : child;
-	    var thisWeight = childNode.borderTop ? weight : 2 * weight;
-	    var minlen = childTop !== childBottom ? 1 : height - depths[v] + 1;
-
-	    g.setEdge(top, childTop, {
-	      weight: thisWeight,
-	      minlen: minlen,
-	      nestingEdge: true
-	    });
-
-	    g.setEdge(childBottom, bottom, {
-	      weight: thisWeight,
-	      minlen: minlen,
-	      nestingEdge: true
-	    });
-	  });
-
-	  if (!g.parent(v)) {
-	    g.setEdge(root, top, { weight: 0, minlen: height + depths[v] });
-	  }
-	}
-
-	function treeDepths(g) {
-	  var depths = {};
-	  function dfs(v, depth) {
-	    var children = g.children(v);
-	    if (children && children.length) {
-	      _.forEach(children, function(child) {
-	        dfs(child, depth + 1);
-	      });
-	    }
-	    depths[v] = depth;
-	  }
-	  _.forEach(g.children(), function(v) { dfs(v, 1); });
-	  return depths;
-	}
-
-	function sumWeights(g) {
-	  return _.reduce(g.edges(), function(acc, e) {
-	    return acc + g.edge(e).weight;
-	  }, 0);
-	}
-
-	function cleanup(g) {
-	  var graphLabel = g.graph();
-	  g.removeNode(graphLabel.nestingRoot);
-	  delete graphLabel.nestingRoot;
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    if (edge.nestingEdge) {
-	      g.removeEdge(e);
-	    }
-	  });
-	}
-
-
-/***/ }),
-/* 288 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-	var util = __webpack_require__(281);
-
-	module.exports = addBorderSegments;
-
-	function addBorderSegments(g) {
-	  function dfs(v) {
-	    var children = g.children(v);
-	    var node = g.node(v);
-	    if (children.length) {
-	      _.forEach(children, dfs);
-	    }
-
-	    if (_.has(node, "minRank")) {
-	      node.borderLeft = [];
-	      node.borderRight = [];
-	      for (var rank = node.minRank, maxRank = node.maxRank + 1;
-	        rank < maxRank;
-	        ++rank) {
-	        addBorderNode(g, "borderLeft", "_bl", v, node, rank);
-	        addBorderNode(g, "borderRight", "_br", v, node, rank);
-	      }
-	    }
-	  }
-
-	  _.forEach(g.children(), dfs);
-	}
-
-	function addBorderNode(g, prop, prefix, sg, sgNode, rank) {
-	  var label = { width: 0, height: 0, rank: rank, borderType: prop };
-	  var prev = sgNode[prop][rank - 1];
-	  var curr = util.addDummyNode(g, "border", label, prefix);
-	  sgNode[prop][rank] = curr;
-	  g.setParent(curr, sg);
-	  if (prev) {
-	    g.setEdge(prev, curr, { weight: 1 });
-	  }
-	}
-
-
-/***/ }),
-/* 289 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-
-	module.exports = {
-	  adjust: adjust,
-	  undo: undo
-	};
-
-	function adjust(g) {
-	  var rankDir = g.graph().rankdir.toLowerCase();
-	  if (rankDir === "lr" || rankDir === "rl") {
-	    swapWidthHeight(g);
-	  }
-	}
-
-	function undo(g) {
-	  var rankDir = g.graph().rankdir.toLowerCase();
-	  if (rankDir === "bt" || rankDir === "rl") {
-	    reverseY(g);
-	  }
-
-	  if (rankDir === "lr" || rankDir === "rl") {
-	    swapXY(g);
-	    swapWidthHeight(g);
-	  }
-	}
-
-	function swapWidthHeight(g) {
-	  _.forEach(g.nodes(), function(v) { swapWidthHeightOne(g.node(v)); });
-	  _.forEach(g.edges(), function(e) { swapWidthHeightOne(g.edge(e)); });
-	}
-
-	function swapWidthHeightOne(attrs) {
-	  var w = attrs.width;
-	  attrs.width = attrs.height;
-	  attrs.height = w;
-	}
-
-	function reverseY(g) {
-	  _.forEach(g.nodes(), function(v) { reverseYOne(g.node(v)); });
-
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    _.forEach(edge.points, reverseYOne);
-	    if (_.has(edge, "y")) {
-	      reverseYOne(edge);
-	    }
-	  });
-	}
-
-	function reverseYOne(attrs) {
-	  attrs.y = -attrs.y;
-	}
-
-	function swapXY(g) {
-	  _.forEach(g.nodes(), function(v) { swapXYOne(g.node(v)); });
-
-	  _.forEach(g.edges(), function(e) {
-	    var edge = g.edge(e);
-	    _.forEach(edge.points, swapXYOne);
-	    if (_.has(edge, "x")) {
-	      swapXYOne(edge);
-	    }
-	  });
-	}
-
-	function swapXYOne(attrs) {
-	  var x = attrs.x;
-	  attrs.x = attrs.y;
-	  attrs.y = x;
-	}
-
-
-/***/ }),
-/* 290 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-	var initOrder = __webpack_require__(291);
-	var crossCount = __webpack_require__(292);
-	var sortSubgraph = __webpack_require__(293);
-	var buildLayerGraph = __webpack_require__(297);
-	var addSubgraphConstraints = __webpack_require__(298);
-	var Graph = __webpack_require__(230).Graph;
-	var util = __webpack_require__(281);
-
-	module.exports = order;
-
-	/*
-	 * Applies heuristics to minimize edge crossings in the graph and sets the best
-	 * order solution as an order attribute on each node.
-	 *
-	 * Pre-conditions:
-	 *
-	 *    1. Graph must be DAG
-	 *    2. Graph nodes must be objects with a "rank" attribute
-	 *    3. Graph edges must have the "weight" attribute
-	 *
-	 * Post-conditions:
-	 *
-	 *    1. Graph nodes will have an "order" attribute based on the results of the
-	 *       algorithm.
-	 */
-	function order(g) {
-	  var maxRank = util.maxRank(g),
-	    downLayerGraphs = buildLayerGraphs(g, _.range(1, maxRank + 1), "inEdges"),
-	    upLayerGraphs = buildLayerGraphs(g, _.range(maxRank - 1, -1, -1), "outEdges");
-
-	  var layering = initOrder(g);
-	  assignOrder(g, layering);
-
-	  var bestCC = Number.POSITIVE_INFINITY,
-	    best;
-
-	  for (var i = 0, lastBest = 0; lastBest < 4; ++i, ++lastBest) {
-	    sweepLayerGraphs(i % 2 ? downLayerGraphs : upLayerGraphs, i % 4 >= 2);
-
-	    layering = util.buildLayerMatrix(g);
-	    var cc = crossCount(g, layering);
-	    if (cc < bestCC) {
-	      lastBest = 0;
-	      best = _.cloneDeep(layering);
-	      bestCC = cc;
-	    }
-	  }
-
-	  assignOrder(g, best);
-	}
-
-	function buildLayerGraphs(g, ranks, relationship) {
-	  return _.map(ranks, function(rank) {
-	    return buildLayerGraph(g, rank, relationship);
-	  });
-	}
-
-	function sweepLayerGraphs(layerGraphs, biasRight) {
-	  var cg = new Graph();
-	  _.forEach(layerGraphs, function(lg) {
-	    var root = lg.graph().root;
-	    var sorted = sortSubgraph(lg, root, cg, biasRight);
-	    _.forEach(sorted.vs, function(v, i) {
-	      lg.node(v).order = i;
-	    });
-	    addSubgraphConstraints(lg, cg, sorted.vs);
-	  });
-	}
-
-	function assignOrder(g, layering) {
-	  _.forEach(layering, function(layer) {
-	    _.forEach(layer, function(v, i) {
-	      g.node(v).order = i;
-	    });
-	  });
-	}
-
-
-/***/ }),
-/* 291 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-
-	module.exports = initOrder;
-
-	/*
-	 * Assigns an initial order value for each node by performing a DFS search
-	 * starting from nodes in the first rank. Nodes are assigned an order in their
-	 * rank as they are first visited.
-	 *
-	 * This approach comes from Gansner, et al., "A Technique for Drawing Directed
-	 * Graphs."
-	 *
-	 * Returns a layering matrix with an array per layer and each layer sorted by
-	 * the order of its nodes.
-	 */
-	function initOrder(g) {
-	  var visited = {};
-	  var simpleNodes = _.filter(g.nodes(), function(v) {
-	    return !g.children(v).length;
-	  });
-	  var maxRank = _.max(_.map(simpleNodes, function(v) { return g.node(v).rank; }));
-	  var layers = _.map(_.range(maxRank + 1), function() { return []; });
-
-	  function dfs(v) {
-	    if (_.has(visited, v)) return;
-	    visited[v] = true;
-	    var node = g.node(v);
-	    layers[node.rank].push(v);
-	    _.forEach(g.successors(v), dfs);
-	  }
-
-	  var orderedVs = _.sortBy(simpleNodes, function(v) { return g.node(v).rank; });
-	  _.forEach(orderedVs, dfs);
-
-	  return layers;
-	}
-
-
-/***/ }),
-/* 292 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-
-	module.exports = crossCount;
-
-	/*
-	 * A function that takes a layering (an array of layers, each with an array of
-	 * ordererd nodes) and a graph and returns a weighted crossing count.
-	 *
-	 * Pre-conditions:
-	 *
-	 *    1. Input graph must be simple (not a multigraph), directed, and include
-	 *       only simple edges.
-	 *    2. Edges in the input graph must have assigned weights.
-	 *
-	 * Post-conditions:
-	 *
-	 *    1. The graph and layering matrix are left unchanged.
-	 *
-	 * This algorithm is derived from Barth, et al., "Bilayer Cross Counting."
-	 */
-	function crossCount(g, layering) {
-	  var cc = 0;
-	  for (var i = 1; i < layering.length; ++i) {
-	    cc += twoLayerCrossCount(g, layering[i-1], layering[i]);
-	  }
-	  return cc;
-	}
-
-	function twoLayerCrossCount(g, northLayer, southLayer) {
-	  // Sort all of the edges between the north and south layers by their position
-	  // in the north layer and then the south. Map these edges to the position of
-	  // their head in the south layer.
-	  var southPos = _.zipObject(southLayer,
-	    _.map(southLayer, function (v, i) { return i; }));
-	  var southEntries = _.flatten(_.map(northLayer, function(v) {
-	    return _.sortBy(_.map(g.outEdges(v), function(e) {
-	      return { pos: southPos[e.w], weight: g.edge(e).weight };
-	    }), "pos");
-	  }), true);
-
-	  // Build the accumulator tree
-	  var firstIndex = 1;
-	  while (firstIndex < southLayer.length) firstIndex <<= 1;
-	  var treeSize = 2 * firstIndex - 1;
-	  firstIndex -= 1;
-	  var tree = _.map(new Array(treeSize), function() { return 0; });
-
-	  // Calculate the weighted crossings
-	  var cc = 0;
-	  _.forEach(southEntries.forEach(function(entry) {
-	    var index = entry.pos + firstIndex;
-	    tree[index] += entry.weight;
-	    var weightSum = 0;
-	    while (index > 0) {
-	      if (index % 2) {
-	        weightSum += tree[index + 1];
-	      }
-	      index = (index - 1) >> 1;
-	      tree[index] += entry.weight;
-	    }
-	    cc += entry.weight * weightSum;
-	  }));
-
-	  return cc;
-	}
-
-
-/***/ }),
-/* 293 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-	var barycenter = __webpack_require__(294);
-	var resolveConflicts = __webpack_require__(295);
-	var sort = __webpack_require__(296);
-
-	module.exports = sortSubgraph;
-
-	function sortSubgraph(g, v, cg, biasRight) {
-	  var movable = g.children(v);
-	  var node = g.node(v);
-	  var bl = node ? node.borderLeft : undefined;
-	  var br = node ? node.borderRight: undefined;
-	  var subgraphs = {};
-
-	  if (bl) {
-	    movable = _.filter(movable, function(w) {
-	      return w !== bl && w !== br;
-	    });
-	  }
-
-	  var barycenters = barycenter(g, movable);
-	  _.forEach(barycenters, function(entry) {
-	    if (g.children(entry.v).length) {
-	      var subgraphResult = sortSubgraph(g, entry.v, cg, biasRight);
-	      subgraphs[entry.v] = subgraphResult;
-	      if (_.has(subgraphResult, "barycenter")) {
-	        mergeBarycenters(entry, subgraphResult);
-	      }
-	    }
-	  });
-
-	  var entries = resolveConflicts(barycenters, cg);
-	  expandSubgraphs(entries, subgraphs);
-
-	  var result = sort(entries, biasRight);
-
-	  if (bl) {
-	    result.vs = _.flatten([bl, result.vs, br], true);
-	    if (g.predecessors(bl).length) {
-	      var blPred = g.node(g.predecessors(bl)[0]),
-	        brPred = g.node(g.predecessors(br)[0]);
-	      if (!_.has(result, "barycenter")) {
-	        result.barycenter = 0;
-	        result.weight = 0;
-	      }
-	      result.barycenter = (result.barycenter * result.weight +
-	                           blPred.order + brPred.order) / (result.weight + 2);
-	      result.weight += 2;
-	    }
-	  }
-
-	  return result;
-	}
-
-	function expandSubgraphs(entries, subgraphs) {
-	  _.forEach(entries, function(entry) {
-	    entry.vs = _.flatten(entry.vs.map(function(v) {
-	      if (subgraphs[v]) {
-	        return subgraphs[v].vs;
-	      }
-	      return v;
-	    }), true);
-	  });
-	}
-
-	function mergeBarycenters(target, other) {
-	  if (!_.isUndefined(target.barycenter)) {
-	    target.barycenter = (target.barycenter * target.weight +
-	                         other.barycenter * other.weight) /
-	                        (target.weight + other.weight);
-	    target.weight += other.weight;
-	  } else {
-	    target.barycenter = other.barycenter;
-	    target.weight = other.weight;
-	  }
-	}
-
-
-/***/ }),
-/* 294 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-
-	module.exports = barycenter;
-
-	function barycenter(g, movable) {
-	  return _.map(movable, function(v) {
-	    var inV = g.inEdges(v);
-	    if (!inV.length) {
-	      return { v: v };
-	    } else {
-	      var result = _.reduce(inV, function(acc, e) {
-	        var edge = g.edge(e),
-	          nodeU = g.node(e.v);
-	        return {
-	          sum: acc.sum + (edge.weight * nodeU.order),
-	          weight: acc.weight + edge.weight
-	        };
-	      }, { sum: 0, weight: 0 });
-
-	      return {
-	        v: v,
-	        barycenter: result.sum / result.weight,
-	        weight: result.weight
-	      };
-	    }
-	  });
-	}
-
-
-
-/***/ }),
-/* 295 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-
-	module.exports = resolveConflicts;
-
-	/*
-	 * Given a list of entries of the form {v, barycenter, weight} and a
-	 * constraint graph this function will resolve any conflicts between the
-	 * constraint graph and the barycenters for the entries. If the barycenters for
-	 * an entry would violate a constraint in the constraint graph then we coalesce
-	 * the nodes in the conflict into a new node that respects the contraint and
-	 * aggregates barycenter and weight information.
-	 *
-	 * This implementation is based on the description in Forster, "A Fast and
-	 * Simple Hueristic for Constrained Two-Level Crossing Reduction," thought it
-	 * differs in some specific details.
-	 *
-	 * Pre-conditions:
-	 *
-	 *    1. Each entry has the form {v, barycenter, weight}, or if the node has
-	 *       no barycenter, then {v}.
-	 *
-	 * Returns:
-	 *
-	 *    A new list of entries of the form {vs, i, barycenter, weight}. The list
-	 *    `vs` may either be a singleton or it may be an aggregation of nodes
-	 *    ordered such that they do not violate constraints from the constraint
-	 *    graph. The property `i` is the lowest original index of any of the
-	 *    elements in `vs`.
-	 */
-	function resolveConflicts(entries, cg) {
-	  var mappedEntries = {};
-	  _.forEach(entries, function(entry, i) {
-	    var tmp = mappedEntries[entry.v] = {
-	      indegree: 0,
-	      "in": [],
-	      out: [],
-	      vs: [entry.v],
-	      i: i
-	    };
-	    if (!_.isUndefined(entry.barycenter)) {
-	      tmp.barycenter = entry.barycenter;
-	      tmp.weight = entry.weight;
-	    }
-	  });
-
-	  _.forEach(cg.edges(), function(e) {
-	    var entryV = mappedEntries[e.v];
-	    var entryW = mappedEntries[e.w];
-	    if (!_.isUndefined(entryV) && !_.isUndefined(entryW)) {
-	      entryW.indegree++;
-	      entryV.out.push(mappedEntries[e.w]);
-	    }
-	  });
-
-	  var sourceSet = _.filter(mappedEntries, function(entry) {
-	    return !entry.indegree;
-	  });
-
-	  return doResolveConflicts(sourceSet);
-	}
-
-	function doResolveConflicts(sourceSet) {
-	  var entries = [];
-
-	  function handleIn(vEntry) {
-	    return function(uEntry) {
-	      if (uEntry.merged) {
-	        return;
-	      }
-	      if (_.isUndefined(uEntry.barycenter) ||
-	          _.isUndefined(vEntry.barycenter) ||
-	          uEntry.barycenter >= vEntry.barycenter) {
-	        mergeEntries(vEntry, uEntry);
-	      }
-	    };
-	  }
-
-	  function handleOut(vEntry) {
-	    return function(wEntry) {
-	      wEntry["in"].push(vEntry);
-	      if (--wEntry.indegree === 0) {
-	        sourceSet.push(wEntry);
-	      }
-	    };
-	  }
-
-	  while (sourceSet.length) {
-	    var entry = sourceSet.pop();
-	    entries.push(entry);
-	    _.forEach(entry["in"].reverse(), handleIn(entry));
-	    _.forEach(entry.out, handleOut(entry));
-	  }
-
-	  return _.map(_.filter(entries, function(entry) { return !entry.merged; }),
-	    function(entry) {
-	      return _.pick(entry, ["vs", "i", "barycenter", "weight"]);
-	    });
-
-	}
-
-	function mergeEntries(target, source) {
-	  var sum = 0;
-	  var weight = 0;
-
-	  if (target.weight) {
-	    sum += target.barycenter * target.weight;
-	    weight += target.weight;
-	  }
-
-	  if (source.weight) {
-	    sum += source.barycenter * source.weight;
-	    weight += source.weight;
-	  }
-
-	  target.vs = source.vs.concat(target.vs);
-	  target.barycenter = sum / weight;
-	  target.weight = weight;
-	  target.i = Math.min(source.i, target.i);
-	  source.merged = true;
-	}
-
-
-/***/ }),
-/* 296 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-	var util = __webpack_require__(281);
-
-	module.exports = sort;
-
-	function sort(entries, biasRight) {
-	  var parts = util.partition(entries, function(entry) {
-	    return _.has(entry, "barycenter");
-	  });
-	  var sortable = parts.lhs,
-	    unsortable = _.sortBy(parts.rhs, function(entry) { return -entry.i; }),
-	    vs = [],
-	    sum = 0,
-	    weight = 0,
-	    vsIndex = 0;
-
-	  sortable.sort(compareWithBias(!!biasRight));
-
-	  vsIndex = consumeUnsortable(vs, unsortable, vsIndex);
-
-	  _.forEach(sortable, function (entry) {
-	    vsIndex += entry.vs.length;
-	    vs.push(entry.vs);
-	    sum += entry.barycenter * entry.weight;
-	    weight += entry.weight;
-	    vsIndex = consumeUnsortable(vs, unsortable, vsIndex);
-	  });
-
-	  var result = { vs: _.flatten(vs, true) };
-	  if (weight) {
-	    result.barycenter = sum / weight;
-	    result.weight = weight;
-	  }
-	  return result;
-	}
-
-	function consumeUnsortable(vs, unsortable, index) {
-	  var last;
-	  while (unsortable.length && (last = _.last(unsortable)).i <= index) {
-	    unsortable.pop();
-	    vs.push(last.vs);
-	    index++;
-	  }
-	  return index;
-	}
-
-	function compareWithBias(bias) {
-	  return function(entryV, entryW) {
-	    if (entryV.barycenter < entryW.barycenter) {
-	      return -1;
-	    } else if (entryV.barycenter > entryW.barycenter) {
-	      return 1;
-	    }
-
-	    return !bias ? entryV.i - entryW.i : entryW.i - entryV.i;
-	  };
-	}
-
-
-/***/ }),
-/* 297 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-	var Graph = __webpack_require__(230).Graph;
-
-	module.exports = buildLayerGraph;
-
-	/*
-	 * Constructs a graph that can be used to sort a layer of nodes. The graph will
-	 * contain all base and subgraph nodes from the request layer in their original
-	 * hierarchy and any edges that are incident on these nodes and are of the type
-	 * requested by the "relationship" parameter.
-	 *
-	 * Nodes from the requested rank that do not have parents are assigned a root
-	 * node in the output graph, which is set in the root graph attribute. This
-	 * makes it easy to walk the hierarchy of movable nodes during ordering.
-	 *
-	 * Pre-conditions:
-	 *
-	 *    1. Input graph is a DAG
-	 *    2. Base nodes in the input graph have a rank attribute
-	 *    3. Subgraph nodes in the input graph has minRank and maxRank attributes
-	 *    4. Edges have an assigned weight
-	 *
-	 * Post-conditions:
-	 *
-	 *    1. Output graph has all nodes in the movable rank with preserved
-	 *       hierarchy.
-	 *    2. Root nodes in the movable layer are made children of the node
-	 *       indicated by the root attribute of the graph.
-	 *    3. Non-movable nodes incident on movable nodes, selected by the
-	 *       relationship parameter, are included in the graph (without hierarchy).
-	 *    4. Edges incident on movable nodes, selected by the relationship
-	 *       parameter, are added to the output graph.
-	 *    5. The weights for copied edges are aggregated as need, since the output
-	 *       graph is not a multi-graph.
-	 */
-	function buildLayerGraph(g, rank, relationship) {
-	  var root = createRootNode(g),
-	    result = new Graph({ compound: true }).setGraph({ root: root })
-	      .setDefaultNodeLabel(function(v) { return g.node(v); });
-
-	  _.forEach(g.nodes(), function(v) {
-	    var node = g.node(v),
-	      parent = g.parent(v);
-
-	    if (node.rank === rank || node.minRank <= rank && rank <= node.maxRank) {
-	      result.setNode(v);
-	      result.setParent(v, parent || root);
-
-	      // This assumes we have only short edges!
-	      _.forEach(g[relationship](v), function(e) {
-	        var u = e.v === v ? e.w : e.v,
-	          edge = result.edge(u, v),
-	          weight = !_.isUndefined(edge) ? edge.weight : 0;
-	        result.setEdge(u, v, { weight: g.edge(e).weight + weight });
-	      });
-
-	      if (_.has(node, "minRank")) {
-	        result.setNode(v, {
-	          borderLeft: node.borderLeft[rank],
-	          borderRight: node.borderRight[rank]
-	        });
-	      }
-	    }
-	  });
-
-	  return result;
-	}
-
-	function createRootNode(g) {
-	  var v;
-	  while (g.hasNode((v = _.uniqueId("_root"))));
-	  return v;
-	}
-
-
-/***/ }),
-/* 298 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-
-	module.exports = addSubgraphConstraints;
-
-	function addSubgraphConstraints(g, cg, vs) {
-	  var prev = {},
-	    rootPrev;
-
-	  _.forEach(vs, function(v) {
-	    var child = g.parent(v),
-	      parent,
-	      prevChild;
-	    while (child) {
-	      parent = g.parent(child);
-	      if (parent) {
-	        prevChild = prev[parent];
-	        prev[parent] = child;
-	      } else {
-	        prevChild = rootPrev;
-	        rootPrev = child;
-	      }
-	      if (prevChild && prevChild !== child) {
-	        cg.setEdge(prevChild, child);
-	        return;
-	      }
-	      child = parent;
-	    }
-	  });
-
-	  /*
-	  function dfs(v) {
-	    var children = v ? g.children(v) : g.children();
-	    if (children.length) {
-	      var min = Number.POSITIVE_INFINITY,
-	          subgraphs = [];
-	      _.each(children, function(child) {
-	        var childMin = dfs(child);
-	        if (g.children(child).length) {
-	          subgraphs.push({ v: child, order: childMin });
-	        }
-	        min = Math.min(min, childMin);
-	      });
-	      _.reduce(_.sortBy(subgraphs, "order"), function(prev, curr) {
-	        cg.setEdge(prev.v, curr.v);
-	        return curr;
-	      });
-	      return min;
-	    }
-	    return g.node(v).order;
-	  }
-	  dfs(undefined);
-	  */
-	}
-
-
-/***/ }),
-/* 299 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-	var util = __webpack_require__(281);
-	var positionX = __webpack_require__(300).positionX;
-
-	module.exports = position;
-
-	function position(g) {
-	  g = util.asNonCompoundGraph(g);
-
-	  positionY(g);
-	  _.forEach(positionX(g), function(x, v) {
-	    g.node(v).x = x;
-	  });
-	}
-
-	function positionY(g) {
-	  var layering = util.buildLayerMatrix(g);
-	  var rankSep = g.graph().ranksep;
-	  var prevY = 0;
-	  _.forEach(layering, function(layer) {
-	    var maxHeight = _.max(_.map(layer, function(v) { return g.node(v).height; }));
-	    _.forEach(layer, function(v) {
-	      g.node(v).y = prevY + maxHeight / 2;
-	    });
-	    prevY += maxHeight + rankSep;
-	  });
-	}
-
-
-
-/***/ }),
-/* 300 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _ = __webpack_require__(232);
-	var Graph = __webpack_require__(230).Graph;
-	var util = __webpack_require__(281);
-
-	/*
-	 * This module provides coordinate assignment based on Brandes and Köpf, "Fast
-	 * and Simple Horizontal Coordinate Assignment."
-	 */
-
-	module.exports = {
-	  positionX: positionX,
-	  findType1Conflicts: findType1Conflicts,
-	  findType2Conflicts: findType2Conflicts,
-	  addConflict: addConflict,
-	  hasConflict: hasConflict,
-	  verticalAlignment: verticalAlignment,
-	  horizontalCompaction: horizontalCompaction,
-	  alignCoordinates: alignCoordinates,
-	  findSmallestWidthAlignment: findSmallestWidthAlignment,
-	  balance: balance
-	};
-
-	/*
-	 * Marks all edges in the graph with a type-1 conflict with the "type1Conflict"
-	 * property. A type-1 conflict is one where a non-inner segment crosses an
-	 * inner segment. An inner segment is an edge with both incident nodes marked
-	 * with the "dummy" property.
-	 *
-	 * This algorithm scans layer by layer, starting with the second, for type-1
-	 * conflicts between the current layer and the previous layer. For each layer
-	 * it scans the nodes from left to right until it reaches one that is incident
-	 * on an inner segment. It then scans predecessors to determine if they have
-	 * edges that cross that inner segment. At the end a final scan is done for all
-	 * nodes on the current rank to see if they cross the last visited inner
-	 * segment.
-	 *
-	 * This algorithm (safely) assumes that a dummy node will only be incident on a
-	 * single node in the layers being scanned.
-	 */
-	function findType1Conflicts(g, layering) {
-	  var conflicts = {};
-
-	  function visitLayer(prevLayer, layer) {
-	    var
-	      // last visited node in the previous layer that is incident on an inner
-	      // segment.
-	      k0 = 0,
-	      // Tracks the last node in this layer scanned for crossings with a type-1
-	      // segment.
-	      scanPos = 0,
-	      prevLayerLength = prevLayer.length,
-	      lastNode = _.last(layer);
-
-	    _.forEach(layer, function(v, i) {
-	      var w = findOtherInnerSegmentNode(g, v),
-	        k1 = w ? g.node(w).order : prevLayerLength;
-
-	      if (w || v === lastNode) {
-	        _.forEach(layer.slice(scanPos, i +1), function(scanNode) {
-	          _.forEach(g.predecessors(scanNode), function(u) {
-	            var uLabel = g.node(u),
-	              uPos = uLabel.order;
-	            if ((uPos < k0 || k1 < uPos) &&
-	                !(uLabel.dummy && g.node(scanNode).dummy)) {
-	              addConflict(conflicts, u, scanNode);
-	            }
-	          });
-	        });
-	        scanPos = i + 1;
-	        k0 = k1;
-	      }
-	    });
-
-	    return layer;
-	  }
-
-	  _.reduce(layering, visitLayer);
-	  return conflicts;
-	}
-
-	function findType2Conflicts(g, layering) {
-	  var conflicts = {};
-
-	  function scan(south, southPos, southEnd, prevNorthBorder, nextNorthBorder) {
-	    var v;
-	    _.forEach(_.range(southPos, southEnd), function(i) {
-	      v = south[i];
-	      if (g.node(v).dummy) {
-	        _.forEach(g.predecessors(v), function(u) {
-	          var uNode = g.node(u);
-	          if (uNode.dummy &&
-	              (uNode.order < prevNorthBorder || uNode.order > nextNorthBorder)) {
-	            addConflict(conflicts, u, v);
-	          }
-	        });
-	      }
-	    });
-	  }
-
-
-	  function visitLayer(north, south) {
-	    var prevNorthPos = -1,
-	      nextNorthPos,
-	      southPos = 0;
-
-	    _.forEach(south, function(v, southLookahead) {
-	      if (g.node(v).dummy === "border") {
-	        var predecessors = g.predecessors(v);
-	        if (predecessors.length) {
-	          nextNorthPos = g.node(predecessors[0]).order;
-	          scan(south, southPos, southLookahead, prevNorthPos, nextNorthPos);
-	          southPos = southLookahead;
-	          prevNorthPos = nextNorthPos;
-	        }
-	      }
-	      scan(south, southPos, south.length, nextNorthPos, north.length);
-	    });
-
-	    return south;
-	  }
-
-	  _.reduce(layering, visitLayer);
-	  return conflicts;
-	}
-
-	function findOtherInnerSegmentNode(g, v) {
-	  if (g.node(v).dummy) {
-	    return _.find(g.predecessors(v), function(u) {
-	      return g.node(u).dummy;
-	    });
-	  }
-	}
-
-	function addConflict(conflicts, v, w) {
-	  if (v > w) {
-	    var tmp = v;
-	    v = w;
-	    w = tmp;
-	  }
-
-	  var conflictsV = conflicts[v];
-	  if (!conflictsV) {
-	    conflicts[v] = conflictsV = {};
-	  }
-	  conflictsV[w] = true;
-	}
-
-	function hasConflict(conflicts, v, w) {
-	  if (v > w) {
-	    var tmp = v;
-	    v = w;
-	    w = tmp;
-	  }
-	  return _.has(conflicts[v], w);
-	}
-
-	/*
-	 * Try to align nodes into vertical "blocks" where possible. This algorithm
-	 * attempts to align a node with one of its median neighbors. If the edge
-	 * connecting a neighbor is a type-1 conflict then we ignore that possibility.
-	 * If a previous node has already formed a block with a node after the node
-	 * we're trying to form a block with, we also ignore that possibility - our
-	 * blocks would be split in that scenario.
-	 */
-	function verticalAlignment(g, layering, conflicts, neighborFn) {
-	  var root = {},
-	    align = {},
-	    pos = {};
-
-	  // We cache the position here based on the layering because the graph and
-	  // layering may be out of sync. The layering matrix is manipulated to
-	  // generate different extreme alignments.
-	  _.forEach(layering, function(layer) {
-	    _.forEach(layer, function(v, order) {
-	      root[v] = v;
-	      align[v] = v;
-	      pos[v] = order;
-	    });
-	  });
-
-	  _.forEach(layering, function(layer) {
-	    var prevIdx = -1;
-	    _.forEach(layer, function(v) {
-	      var ws = neighborFn(v);
-	      if (ws.length) {
-	        ws = _.sortBy(ws, function(w) { return pos[w]; });
-	        var mp = (ws.length - 1) / 2;
-	        for (var i = Math.floor(mp), il = Math.ceil(mp); i <= il; ++i) {
-	          var w = ws[i];
-	          if (align[v] === v &&
-	              prevIdx < pos[w] &&
-	              !hasConflict(conflicts, v, w)) {
-	            align[w] = v;
-	            align[v] = root[v] = root[w];
-	            prevIdx = pos[w];
-	          }
-	        }
-	      }
-	    });
-	  });
-
-	  return { root: root, align: align };
-	}
-
-	function horizontalCompaction(g, layering, root, align, reverseSep) {
-	  // This portion of the algorithm differs from BK due to a number of problems.
-	  // Instead of their algorithm we construct a new block graph and do two
-	  // sweeps. The first sweep places blocks with the smallest possible
-	  // coordinates. The second sweep removes unused space by moving blocks to the
-	  // greatest coordinates without violating separation.
-	  var xs = {},
-	    blockG = buildBlockGraph(g, layering, root, reverseSep),
-	    borderType = reverseSep ? "borderLeft" : "borderRight";
-
-	  function iterate(setXsFunc, nextNodesFunc) {
-	    var stack = blockG.nodes();
-	    var elem = stack.pop();
-	    var visited = {};
-	    while (elem) {
-	      if (visited[elem]) {
-	        setXsFunc(elem);
-	      } else {
-	        visited[elem] = true;
-	        stack.push(elem);
-	        stack = stack.concat(nextNodesFunc(elem));
-	      }
-
-	      elem = stack.pop();
-	    }
-	  }
-
-	  // First pass, assign smallest coordinates
-	  function pass1(elem) {
-	    xs[elem] = blockG.inEdges(elem).reduce(function(acc, e) {
-	      return Math.max(acc, xs[e.v] + blockG.edge(e));
-	    }, 0);
-	  }
-
-	  // Second pass, assign greatest coordinates
-	  function pass2(elem) {
-	    var min = blockG.outEdges(elem).reduce(function(acc, e) {
-	      return Math.min(acc, xs[e.w] - blockG.edge(e));
-	    }, Number.POSITIVE_INFINITY);
-
-	    var node = g.node(elem);
-	    if (min !== Number.POSITIVE_INFINITY && node.borderType !== borderType) {
-	      xs[elem] = Math.max(xs[elem], min);
-	    }
-	  }
-
-	  iterate(pass1, blockG.predecessors.bind(blockG));
-	  iterate(pass2, blockG.successors.bind(blockG));
-
-	  // Assign x coordinates to all nodes
-	  _.forEach(align, function(v) {
-	    xs[v] = xs[root[v]];
-	  });
-
-	  return xs;
-	}
-
-
-	function buildBlockGraph(g, layering, root, reverseSep) {
-	  var blockGraph = new Graph(),
-	    graphLabel = g.graph(),
-	    sepFn = sep(graphLabel.nodesep, graphLabel.edgesep, reverseSep);
-
-	  _.forEach(layering, function(layer) {
-	    var u;
-	    _.forEach(layer, function(v) {
-	      var vRoot = root[v];
-	      blockGraph.setNode(vRoot);
-	      if (u) {
-	        var uRoot = root[u],
-	          prevMax = blockGraph.edge(uRoot, vRoot);
-	        blockGraph.setEdge(uRoot, vRoot, Math.max(sepFn(g, v, u), prevMax || 0));
-	      }
-	      u = v;
-	    });
-	  });
-
-	  return blockGraph;
-	}
-
-	/*
-	 * Returns the alignment that has the smallest width of the given alignments.
-	 */
-	function findSmallestWidthAlignment(g, xss) {
-	  return _.minBy(_.values(xss), function (xs) {
-	    var max = Number.NEGATIVE_INFINITY;
-	    var min = Number.POSITIVE_INFINITY;
-
-	    _.forIn(xs, function (x, v) {
-	      var halfWidth = width(g, v) / 2;
-
-	      max = Math.max(x + halfWidth, max);
-	      min = Math.min(x - halfWidth, min);
-	    });
-
-	    return max - min;
-	  });
-	}
-
-	/*
-	 * Align the coordinates of each of the layout alignments such that
-	 * left-biased alignments have their minimum coordinate at the same point as
-	 * the minimum coordinate of the smallest width alignment and right-biased
-	 * alignments have their maximum coordinate at the same point as the maximum
-	 * coordinate of the smallest width alignment.
-	 */
-	function alignCoordinates(xss, alignTo) {
-	  var alignToVals = _.values(alignTo),
-	    alignToMin = _.min(alignToVals),
-	    alignToMax = _.max(alignToVals);
-
-	  _.forEach(["u", "d"], function(vert) {
-	    _.forEach(["l", "r"], function(horiz) {
-	      var alignment = vert + horiz,
-	        xs = xss[alignment],
-	        delta;
-	      if (xs === alignTo) return;
-
-	      var xsVals = _.values(xs);
-	      delta = horiz === "l" ? alignToMin - _.min(xsVals) : alignToMax - _.max(xsVals);
-
-	      if (delta) {
-	        xss[alignment] = _.mapValues(xs, function(x) { return x + delta; });
-	      }
-	    });
-	  });
-	}
-
-	function balance(xss, align) {
-	  return _.mapValues(xss.ul, function(ignore, v) {
-	    if (align) {
-	      return xss[align.toLowerCase()][v];
-	    } else {
-	      var xs = _.sortBy(_.map(xss, v));
-	      return (xs[1] + xs[2]) / 2;
-	    }
-	  });
-	}
-
-	function positionX(g) {
-	  var layering = util.buildLayerMatrix(g);
-	  var conflicts = _.merge(
-	    findType1Conflicts(g, layering),
-	    findType2Conflicts(g, layering));
-
-	  var xss = {};
-	  var adjustedLayering;
-	  _.forEach(["u", "d"], function(vert) {
-	    adjustedLayering = vert === "u" ? layering : _.values(layering).reverse();
-	    _.forEach(["l", "r"], function(horiz) {
-	      if (horiz === "r") {
-	        adjustedLayering = _.map(adjustedLayering, function(inner) {
-	          return _.values(inner).reverse();
-	        });
-	      }
-
-	      var neighborFn = (vert === "u" ? g.predecessors : g.successors).bind(g);
-	      var align = verticalAlignment(g, adjustedLayering, conflicts, neighborFn);
-	      var xs = horizontalCompaction(g, adjustedLayering,
-	        align.root, align.align, horiz === "r");
-	      if (horiz === "r") {
-	        xs = _.mapValues(xs, function(x) { return -x; });
-	      }
-	      xss[vert + horiz] = xs;
-	    });
-	  });
-
-	  var smallestWidth = findSmallestWidthAlignment(g, xss);
-	  alignCoordinates(xss, smallestWidth);
-	  return balance(xss, g.graph().align);
-	}
-
-	function sep(nodeSep, edgeSep, reverseSep) {
-	  return function(g, v, w) {
-	    var vLabel = g.node(v);
-	    var wLabel = g.node(w);
-	    var sum = 0;
-	    var delta;
-
-	    sum += vLabel.width / 2;
-	    if (_.has(vLabel, "labelpos")) {
-	      switch (vLabel.labelpos.toLowerCase()) {
-	      case "l": delta = -vLabel.width / 2; break;
-	      case "r": delta = vLabel.width / 2; break;
-	      }
-	    }
-	    if (delta) {
-	      sum += reverseSep ? delta : -delta;
-	    }
-	    delta = 0;
-
-	    sum += (vLabel.dummy ? edgeSep : nodeSep) / 2;
-	    sum += (wLabel.dummy ? edgeSep : nodeSep) / 2;
-
-	    sum += wLabel.width / 2;
-	    if (_.has(wLabel, "labelpos")) {
-	      switch (wLabel.labelpos.toLowerCase()) {
-	      case "l": delta = wLabel.width / 2; break;
-	      case "r": delta = -wLabel.width / 2; break;
-	      }
-	    }
-	    if (delta) {
-	      sum += reverseSep ? delta : -delta;
-	    }
-	    delta = 0;
-
-	    return sum;
-	  };
-	}
-
-	function width(g, v) {
-	  return g.node(v).width;
-	}
-
-
-/***/ }),
-/* 301 */
-/***/ (function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(232);
-	var util = __webpack_require__(281);
-	var Graph = __webpack_require__(230).Graph;
-
-	module.exports = {
-	  debugOrdering: debugOrdering
-	};
-
-	/* istanbul ignore next */
-	function debugOrdering(g) {
-	  var layerMatrix = util.buildLayerMatrix(g);
-
-	  var h = new Graph({ compound: true, multigraph: true }).setGraph({});
-
-	  _.forEach(g.nodes(), function(v) {
-	    h.setNode(v, { label: v });
-	    h.setParent(v, "layer" + g.node(v).rank);
-	  });
-
-	  _.forEach(g.edges(), function(e) {
-	    h.setEdge(e.v, e.w, {}, e.name);
-	  });
-
-	  _.forEach(layerMatrix, function(layer, i) {
-	    var layerV = "layer" + i;
-	    h.setNode(layerV, { rank: "same" });
-	    _.reduce(layer, function(u, v) {
-	      h.setEdge(u, v, { style: "invis" });
-	      return v;
-	    });
-	  });
-
-	  return h;
-	}
-
-
-/***/ }),
-/* 302 */
-/***/ (function(module, exports) {
-
-	module.exports = "0.8.5";
-
-
-/***/ }),
 /* 303 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26885,7 +26924,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 	  // Set up Backbone appropriately for the environment. Start with AMD.
 	  if (true) {
-	    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(228), __webpack_require__(217), exports], __WEBPACK_AMD_DEFINE_RESULT__ = function(_, $, exports) {
+	    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(302), __webpack_require__(291), exports], __WEBPACK_AMD_DEFINE_RESULT__ = function(_, $, exports) {
 	      // Export global even in AMD case in case this script is loaded with
 	      // others that may still expect a global Backbone.
 	      root.Backbone = factory(root, exports, _, $);
@@ -46085,7 +46124,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	  }
 	}.call(this));
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(66)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(68)(module)))
 
 /***/ }),
 /* 306 */
@@ -56969,11 +57008,25 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 /* 307 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(217),
-	    __webpack_require__(228),
-	    __webpack_require__(229),
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 2020 Splunk Inc.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License. */
+
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(291),
+	    __webpack_require__(302),
 	    __webpack_require__(2),
+	    __webpack_require__(4),
 	    __webpack_require__(303),
 	    __webpack_require__(308)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function (
@@ -57110,11 +57163,25 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 /* 308 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(217),
-	    __webpack_require__(228),
-	    __webpack_require__(229),
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 2020 Splunk Inc.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License. */
+
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(291),
+	    __webpack_require__(302),
 	    __webpack_require__(2),
+	    __webpack_require__(4),
 	    __webpack_require__(303)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function (
 	        $,
@@ -57124,6 +57191,23 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	        joint
 	    ) {
 	        let processShapes = {};
+	        processShapes.Start = joint.shapes.standard.Circle.define("process.Start", {
+	            attrs: {
+	                bodyText: {
+	                    fontFamily: "Splunk Platform Mono,Inconsolata,Consolas,Droid Sans Mono,Monaco,Courier New,Courier,monospace",
+	                }
+	            },
+	            size: {
+	                height: 50,
+	                width: 50
+	            }
+	        },{}, {
+	            create: function(id){
+	                var start = new this();
+	                start.id = id
+	                return start
+	            }
+	        })
 
 	        processShapes.Step = joint.shapes.standard.HeaderedRectangle.define("process.Step", {
 	                attrs: {
@@ -57190,9 +57274,2973 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 /* 309 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
-	    __webpack_require__(217),
-	    __webpack_require__(228)
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 2020 Splunk Inc.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License. */
+
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(291),
+	    __webpack_require__(302),
+	    __webpack_require__(2),
+	    __webpack_require__(4),
+	    __webpack_require__(303),
+	    __webpack_require__(310),
+	    __webpack_require__(308)
+	], __WEBPACK_AMD_DEFINE_RESULT__ = function (
+	        $,
+	        _,
+	        dagre,
+	        graphlib,
+	        joint,
+	        dot,
+	        processShapes
+	    ) {
+	        let dotRenderer = {};
+
+	        dotRenderer.buildGraph = function(data) {
+	            var dot_definition = data[0][0]
+	             try {
+	                g = dot.read(dot_definition)
+	                console.log(g)
+
+	                var graph = new joint.dia.Graph;
+	                
+	                graph.fromGraphLib(g, {
+	                    importNode: function(node, glGraph, graph) {
+	                        let graphNode = glGraph.node(node)
+
+	                        let label = graphNode["label"] ? graphNode["label"]: ""
+	                        console.log(graphNode)
+	                        if (graphNode["shape"] === "circle") {
+	                            var new_shape = new joint.shapes.standard.Circle({id: node, attrs: {
+	                                body: {
+	                                    fill: graphNode["fillcolor"]
+	                                },
+	                                label: {
+	                                    fill: 'black',
+	                                    text: label
+	                                },
+	                            },
+	                            position: { x: 100, y: 100 },
+	                            size: { width: 130, height: 30}
+	            
+	                        });
+	                        } else if (graphNode["shape"] === "box"){
+
+	                            var new_shape = new joint.shapes.standard.Rectangle({id: node, attrs: {
+	                            body: {
+	                                fill: graphNode["fillcolor"]
+	                            },
+	                            label: {
+	                                text: label,
+	                                fill: 'black'
+	                            },
+	                        },
+	                        position: { x: 100, y: 100 },
+	                        size: { width: 130, height: 30}
+	        
+	                    });
+	                    
+	                    if (label !== "" && graphNode["fillcolor"] === "black") {
+	                        new_shape.attr({label: {fill: "white"}}) 
+	                    }
+	                    var letterSize = 12;
+	                    var maxLineLength = _.max(label.split("\n"), function (l) { return l.length; }).length;
+	                    var width = 2 * (letterSize * (0.4 * maxLineLength + 1));
+	                    width = width < 100 ? 100 : width;
+	                    width = width > 300 ? 300 : width;
+	                    new_shape.size({width: width})
+	                }
+	        
+	                        new_shape.addTo(graph)
+	                    },
+	                    importEdge: function(edge, glGraph, graph) {
+	                        console.log(edge)
+	                        var new_link = new joint.shapes.standard.Link({
+	                            source: { id: edge.v },
+	                            target: { id: edge.w }
+	                        })
+	                        
+	                        if (glGraph.edge(edge.v, edge.w)["label"])
+	                        new_link.appendLabel({
+	                            attrs: {
+	                                text: {
+	                                    text: glGraph.edge(edge.v, edge.w)["label"]
+	                                }
+	                            }
+	                        })
+	        
+	                        new_link.addTo(graph)
+	                    }
+	                });
+
+	                return graph
+	                
+	             }
+	             catch(err) {
+	                console.log(err)
+	            }
+	        }
+
+	        return dotRenderer;
+	    }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+/* 310 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var read = __webpack_require__(311);
+	var readMany = __webpack_require__(318);
+	var write = __webpack_require__(319);
+	var version = __webpack_require__(320);
+
+	module.exports = {
+	  graphlib: __webpack_require__(316),
+
+	  // Parsing
+	  read: read,
+	  readMany: readMany,
+
+	  // Writing
+	  write: write,
+
+	  // Version
+	  version: version,
+
+	  // For levelup encoding
+	  type: "dot",
+	  buffer: false
+	};
+
+
+/***/ }),
+/* 311 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var grammar = __webpack_require__(312);
+	var buildGraph = __webpack_require__(315);
+
+	module.exports = function readOne(str) {
+	  var parseTree = grammar.parse(str, { startRule: "graphStmt" });
+	  return buildGraph(parseTree);
+	};
+
+
+
+/***/ }),
+/* 312 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	module.exports = (function() {
+	  /*
+	   * Generated by PEG.js 0.8.0.
+	   *
+	   * http://pegjs.majda.cz/
+	   */
+
+	  function peg$subclass(child, parent) {
+	    function ctor() { this.constructor = child; }
+	    ctor.prototype = parent.prototype;
+	    child.prototype = new ctor();
+	  }
+
+	  function SyntaxError(message, expected, found, offset, line, column) {
+	    this.message  = message;
+	    this.expected = expected;
+	    this.found    = found;
+	    this.offset   = offset;
+	    this.line     = line;
+	    this.column   = column;
+
+	    this.name     = "SyntaxError";
+	  }
+
+	  peg$subclass(SyntaxError, Error);
+
+	  function parse(input) {
+	    var options = arguments.length > 1 ? arguments[1] : {},
+
+	        peg$FAILED = {},
+
+	        peg$startRuleFunctions = { start: peg$parsestart, graphStmt: peg$parsegraphStmt },
+	        peg$startRuleFunction  = peg$parsestart,
+
+	        peg$c0 = [],
+	        peg$c1 = peg$FAILED,
+	        peg$c2 = null,
+	        peg$c3 = "{",
+	        peg$c4 = { type: "literal", value: "{", description: "\"{\"" },
+	        peg$c5 = "}",
+	        peg$c6 = { type: "literal", value: "}", description: "\"}\"" },
+	        peg$c7 = function(strict, type, id, stmts) {
+	              return {type: type, id: id, strict: strict !== null, stmts: stmts};
+	            },
+	        peg$c8 = ";",
+	        peg$c9 = { type: "literal", value: ";", description: "\";\"" },
+	        peg$c10 = function(first, rest) {
+	              var result = [first];
+	              for (var i = 0; i < rest.length; ++i) {
+	                result.push(rest[i][1]);
+	              }
+	              return result;
+	            },
+	        peg$c11 = function(type, attrs) {
+	              return { type: "attr", attrType: type, attrs: attrs || {}};
+	            },
+	        peg$c12 = "=",
+	        peg$c13 = { type: "literal", value: "=", description: "\"=\"" },
+	        peg$c14 = function(k, v) {
+	              var attrs = {};
+	              attrs[k] = v;
+	              return { type: "inlineAttr", attrs: attrs };
+	            },
+	        peg$c15 = function(id, attrs) { return {type: "node", id: id, attrs: attrs || {}}; },
+	        peg$c16 = function(lhs, rhs, attrs) {
+	              var elems = [lhs];
+	              for (var i = 0; i < rhs.length; ++i) {
+	                elems.push(rhs[i]);
+	              }
+	              return { type: "edge", elems: elems, attrs: attrs || {} };
+	            },
+	        peg$c17 = function(id, stmts) {
+	              id = (id && id[2]) || [];
+	              return { type: "subgraph", id: id[0], stmts: stmts };
+	            },
+	        peg$c18 = function(first, rest) {
+	              var result = first;
+	              for (var i = 0; i < rest.length; ++i) {
+	                _.merge(result, rest[i][1]);
+	              }
+	              return result;
+	            },
+	        peg$c19 = "[",
+	        peg$c20 = { type: "literal", value: "[", description: "\"[\"" },
+	        peg$c21 = "]",
+	        peg$c22 = { type: "literal", value: "]", description: "\"]\"" },
+	        peg$c23 = function(aList) { return aList; },
+	        peg$c24 = ",",
+	        peg$c25 = { type: "literal", value: ",", description: "\",\"" },
+	        peg$c26 = function(first, rest) {
+	              var result = first;
+	              for (var i = 0; i < rest.length; ++i) {
+	                _.merge(result, rest[i][3]);
+	              }
+	              return result;
+	            },
+	        peg$c27 = "--",
+	        peg$c28 = { type: "literal", value: "--", description: "\"--\"" },
+	        peg$c29 = function() { return directed; },
+	        peg$c30 = void 0,
+	        peg$c31 = "->",
+	        peg$c32 = { type: "literal", value: "->", description: "\"->\"" },
+	        peg$c33 = function(rhs, rest) {
+	              var result = [rhs];
+	              if (rest) {
+	                for (var i = 0; i < rest.length; ++i) {
+	                  result.push(rest[i]);
+	                }
+	              }
+	              return result;
+	            },
+	        peg$c34 = function(k, v) {
+	              var result = {};
+	              result[k] = v[3];
+	              return result;
+	            },
+	        peg$c35 = function(id) { return { type: "node", id: id, attrs: {} }; },
+	        peg$c36 = function(id) { return id; },
+	        peg$c37 = ":",
+	        peg$c38 = { type: "literal", value: ":", description: "\":\"" },
+	        peg$c39 = "ne",
+	        peg$c40 = { type: "literal", value: "ne", description: "\"ne\"" },
+	        peg$c41 = "se",
+	        peg$c42 = { type: "literal", value: "se", description: "\"se\"" },
+	        peg$c43 = "sw",
+	        peg$c44 = { type: "literal", value: "sw", description: "\"sw\"" },
+	        peg$c45 = "nw",
+	        peg$c46 = { type: "literal", value: "nw", description: "\"nw\"" },
+	        peg$c47 = "n",
+	        peg$c48 = { type: "literal", value: "n", description: "\"n\"" },
+	        peg$c49 = "e",
+	        peg$c50 = { type: "literal", value: "e", description: "\"e\"" },
+	        peg$c51 = "s",
+	        peg$c52 = { type: "literal", value: "s", description: "\"s\"" },
+	        peg$c53 = "w",
+	        peg$c54 = { type: "literal", value: "w", description: "\"w\"" },
+	        peg$c55 = "c",
+	        peg$c56 = { type: "literal", value: "c", description: "\"c\"" },
+	        peg$c57 = "_",
+	        peg$c58 = { type: "literal", value: "_", description: "\"_\"" },
+	        peg$c59 = { type: "other", description: "identifier" },
+	        peg$c60 = /^[a-zA-Z\u0200-\u0377_]/,
+	        peg$c61 = { type: "class", value: "[a-zA-Z\\u0200-\\u0377_]", description: "[a-zA-Z\\u0200-\\u0377_]" },
+	        peg$c62 = /^[a-zA-Z\u0200-\u0377_0-9]/,
+	        peg$c63 = { type: "class", value: "[a-zA-Z\\u0200-\\u0377_0-9]", description: "[a-zA-Z\\u0200-\\u0377_0-9]" },
+	        peg$c64 = function(fst, rest) { return fst + rest.join(""); },
+	        peg$c65 = "-",
+	        peg$c66 = { type: "literal", value: "-", description: "\"-\"" },
+	        peg$c67 = ".",
+	        peg$c68 = { type: "literal", value: ".", description: "\".\"" },
+	        peg$c69 = /^[0-9]/,
+	        peg$c70 = { type: "class", value: "[0-9]", description: "[0-9]" },
+	        peg$c71 = function(sign, dot, after) {
+	              return (sign || "") + dot + after.join("");
+	            },
+	        peg$c72 = function(sign, before, after) {
+	              return (sign || "") + before.join("") + (after ? after[0] : "") + (after ? after[1].join("") : "");
+	            },
+	        peg$c73 = "\"",
+	        peg$c74 = { type: "literal", value: "\"", description: "\"\\\"\"" },
+	        peg$c75 = "\\\"",
+	        peg$c76 = { type: "literal", value: "\\\"", description: "\"\\\\\\\"\"" },
+	        peg$c77 = function() { return '"'; },
+	        peg$c78 = "\\",
+	        peg$c79 = { type: "literal", value: "\\", description: "\"\\\\\"" },
+	        peg$c80 = /^[^"]/,
+	        peg$c81 = { type: "class", value: "[^\"]", description: "[^\"]" },
+	        peg$c82 = function(ch) { return "\\" + ch; },
+	        peg$c83 = function(id) {
+	              return id.join("");
+	            },
+	        peg$c84 = "node",
+	        peg$c85 = { type: "literal", value: "node", description: "\"node\"" },
+	        peg$c86 = function(k) { return k.toLowerCase(); },
+	        peg$c87 = "edge",
+	        peg$c88 = { type: "literal", value: "edge", description: "\"edge\"" },
+	        peg$c89 = "graph",
+	        peg$c90 = { type: "literal", value: "graph", description: "\"graph\"" },
+	        peg$c91 = "digraph",
+	        peg$c92 = { type: "literal", value: "digraph", description: "\"digraph\"" },
+	        peg$c93 = "subgraph",
+	        peg$c94 = { type: "literal", value: "subgraph", description: "\"subgraph\"" },
+	        peg$c95 = "strict",
+	        peg$c96 = { type: "literal", value: "strict", description: "\"strict\"" },
+	        peg$c97 = function(graph) {
+	              directed = graph === "digraph";
+	              return graph;
+	            },
+	        peg$c98 = { type: "other", description: "whitespace" },
+	        peg$c99 = /^[ \t\r\n]/,
+	        peg$c100 = { type: "class", value: "[ \\t\\r\\n]", description: "[ \\t\\r\\n]" },
+	        peg$c101 = { type: "other", description: "comment" },
+	        peg$c102 = "//",
+	        peg$c103 = { type: "literal", value: "//", description: "\"//\"" },
+	        peg$c104 = /^[^\n]/,
+	        peg$c105 = { type: "class", value: "[^\\n]", description: "[^\\n]" },
+	        peg$c106 = "/*",
+	        peg$c107 = { type: "literal", value: "/*", description: "\"/*\"" },
+	        peg$c108 = "*/",
+	        peg$c109 = { type: "literal", value: "*/", description: "\"*/\"" },
+	        peg$c110 = { type: "any", description: "any character" },
+
+	        peg$currPos          = 0,
+	        peg$reportedPos      = 0,
+	        peg$cachedPos        = 0,
+	        peg$cachedPosDetails = { line: 1, column: 1, seenCR: false },
+	        peg$maxFailPos       = 0,
+	        peg$maxFailExpected  = [],
+	        peg$silentFails      = 0,
+
+	        peg$result;
+
+	    if ("startRule" in options) {
+	      if (!(options.startRule in peg$startRuleFunctions)) {
+	        throw new Error("Can't start parsing from rule \"" + options.startRule + "\".");
+	      }
+
+	      peg$startRuleFunction = peg$startRuleFunctions[options.startRule];
+	    }
+
+	    function text() {
+	      return input.substring(peg$reportedPos, peg$currPos);
+	    }
+
+	    function offset() {
+	      return peg$reportedPos;
+	    }
+
+	    function line() {
+	      return peg$computePosDetails(peg$reportedPos).line;
+	    }
+
+	    function column() {
+	      return peg$computePosDetails(peg$reportedPos).column;
+	    }
+
+	    function expected(description) {
+	      throw peg$buildException(
+	        null,
+	        [{ type: "other", description: description }],
+	        peg$reportedPos
+	      );
+	    }
+
+	    function error(message) {
+	      throw peg$buildException(message, null, peg$reportedPos);
+	    }
+
+	    function peg$computePosDetails(pos) {
+	      function advance(details, startPos, endPos) {
+	        var p, ch;
+
+	        for (p = startPos; p < endPos; p++) {
+	          ch = input.charAt(p);
+	          if (ch === "\n") {
+	            if (!details.seenCR) { details.line++; }
+	            details.column = 1;
+	            details.seenCR = false;
+	          } else if (ch === "\r" || ch === "\u2028" || ch === "\u2029") {
+	            details.line++;
+	            details.column = 1;
+	            details.seenCR = true;
+	          } else {
+	            details.column++;
+	            details.seenCR = false;
+	          }
+	        }
+	      }
+
+	      if (peg$cachedPos !== pos) {
+	        if (peg$cachedPos > pos) {
+	          peg$cachedPos = 0;
+	          peg$cachedPosDetails = { line: 1, column: 1, seenCR: false };
+	        }
+	        advance(peg$cachedPosDetails, peg$cachedPos, pos);
+	        peg$cachedPos = pos;
+	      }
+
+	      return peg$cachedPosDetails;
+	    }
+
+	    function peg$fail(expected) {
+	      if (peg$currPos < peg$maxFailPos) { return; }
+
+	      if (peg$currPos > peg$maxFailPos) {
+	        peg$maxFailPos = peg$currPos;
+	        peg$maxFailExpected = [];
+	      }
+
+	      peg$maxFailExpected.push(expected);
+	    }
+
+	    function peg$buildException(message, expected, pos) {
+	      function cleanupExpected(expected) {
+	        var i = 1;
+
+	        expected.sort(function(a, b) {
+	          if (a.description < b.description) {
+	            return -1;
+	          } else if (a.description > b.description) {
+	            return 1;
+	          } else {
+	            return 0;
+	          }
+	        });
+
+	        while (i < expected.length) {
+	          if (expected[i - 1] === expected[i]) {
+	            expected.splice(i, 1);
+	          } else {
+	            i++;
+	          }
+	        }
+	      }
+
+	      function buildMessage(expected, found) {
+	        function stringEscape(s) {
+	          function hex(ch) { return ch.charCodeAt(0).toString(16).toUpperCase(); }
+
+	          return s
+	            .replace(/\\/g,   '\\\\')
+	            .replace(/"/g,    '\\"')
+	            .replace(/\x08/g, '\\b')
+	            .replace(/\t/g,   '\\t')
+	            .replace(/\n/g,   '\\n')
+	            .replace(/\f/g,   '\\f')
+	            .replace(/\r/g,   '\\r')
+	            .replace(/[\x00-\x07\x0B\x0E\x0F]/g, function(ch) { return '\\x0' + hex(ch); })
+	            .replace(/[\x10-\x1F\x80-\xFF]/g,    function(ch) { return '\\x'  + hex(ch); })
+	            .replace(/[\u0180-\u0FFF]/g,         function(ch) { return '\\u0' + hex(ch); })
+	            .replace(/[\u1080-\uFFFF]/g,         function(ch) { return '\\u'  + hex(ch); });
+	        }
+
+	        var expectedDescs = new Array(expected.length),
+	            expectedDesc, foundDesc, i;
+
+	        for (i = 0; i < expected.length; i++) {
+	          expectedDescs[i] = expected[i].description;
+	        }
+
+	        expectedDesc = expected.length > 1
+	          ? expectedDescs.slice(0, -1).join(", ")
+	              + " or "
+	              + expectedDescs[expected.length - 1]
+	          : expectedDescs[0];
+
+	        foundDesc = found ? "\"" + stringEscape(found) + "\"" : "end of input";
+
+	        return "Expected " + expectedDesc + " but " + foundDesc + " found.";
+	      }
+
+	      var posDetails = peg$computePosDetails(pos),
+	          found      = pos < input.length ? input.charAt(pos) : null;
+
+	      if (expected !== null) {
+	        cleanupExpected(expected);
+	      }
+
+	      return new SyntaxError(
+	        message !== null ? message : buildMessage(expected, found),
+	        expected,
+	        found,
+	        pos,
+	        posDetails.line,
+	        posDetails.column
+	      );
+	    }
+
+	    function peg$parsestart() {
+	      var s0, s1;
+
+	      s0 = [];
+	      s1 = peg$parsegraphStmt();
+	      if (s1 !== peg$FAILED) {
+	        while (s1 !== peg$FAILED) {
+	          s0.push(s1);
+	          s1 = peg$parsegraphStmt();
+	        }
+	      } else {
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsegraphStmt() {
+	      var s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13;
+
+	      s0 = peg$currPos;
+	      s1 = [];
+	      s2 = peg$parse_();
+	      while (s2 !== peg$FAILED) {
+	        s1.push(s2);
+	        s2 = peg$parse_();
+	      }
+	      if (s1 !== peg$FAILED) {
+	        s2 = peg$currPos;
+	        s3 = peg$parsestrict();
+	        if (s3 !== peg$FAILED) {
+	          s4 = peg$parse_();
+	          if (s4 !== peg$FAILED) {
+	            s3 = [s3, s4];
+	            s2 = s3;
+	          } else {
+	            peg$currPos = s2;
+	            s2 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s2;
+	          s2 = peg$c1;
+	        }
+	        if (s2 === peg$FAILED) {
+	          s2 = peg$c2;
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s3 = peg$parsegraphType();
+	          if (s3 !== peg$FAILED) {
+	            s4 = [];
+	            s5 = peg$parse_();
+	            while (s5 !== peg$FAILED) {
+	              s4.push(s5);
+	              s5 = peg$parse_();
+	            }
+	            if (s4 !== peg$FAILED) {
+	              s5 = peg$parseid();
+	              if (s5 === peg$FAILED) {
+	                s5 = peg$c2;
+	              }
+	              if (s5 !== peg$FAILED) {
+	                s6 = [];
+	                s7 = peg$parse_();
+	                while (s7 !== peg$FAILED) {
+	                  s6.push(s7);
+	                  s7 = peg$parse_();
+	                }
+	                if (s6 !== peg$FAILED) {
+	                  if (input.charCodeAt(peg$currPos) === 123) {
+	                    s7 = peg$c3;
+	                    peg$currPos++;
+	                  } else {
+	                    s7 = peg$FAILED;
+	                    if (peg$silentFails === 0) { peg$fail(peg$c4); }
+	                  }
+	                  if (s7 !== peg$FAILED) {
+	                    s8 = [];
+	                    s9 = peg$parse_();
+	                    while (s9 !== peg$FAILED) {
+	                      s8.push(s9);
+	                      s9 = peg$parse_();
+	                    }
+	                    if (s8 !== peg$FAILED) {
+	                      s9 = peg$parsestmtList();
+	                      if (s9 === peg$FAILED) {
+	                        s9 = peg$c2;
+	                      }
+	                      if (s9 !== peg$FAILED) {
+	                        s10 = [];
+	                        s11 = peg$parse_();
+	                        while (s11 !== peg$FAILED) {
+	                          s10.push(s11);
+	                          s11 = peg$parse_();
+	                        }
+	                        if (s10 !== peg$FAILED) {
+	                          if (input.charCodeAt(peg$currPos) === 125) {
+	                            s11 = peg$c5;
+	                            peg$currPos++;
+	                          } else {
+	                            s11 = peg$FAILED;
+	                            if (peg$silentFails === 0) { peg$fail(peg$c6); }
+	                          }
+	                          if (s11 !== peg$FAILED) {
+	                            s12 = [];
+	                            s13 = peg$parse_();
+	                            while (s13 !== peg$FAILED) {
+	                              s12.push(s13);
+	                              s13 = peg$parse_();
+	                            }
+	                            if (s12 !== peg$FAILED) {
+	                              peg$reportedPos = s0;
+	                              s1 = peg$c7(s2, s3, s5, s9);
+	                              s0 = s1;
+	                            } else {
+	                              peg$currPos = s0;
+	                              s0 = peg$c1;
+	                            }
+	                          } else {
+	                            peg$currPos = s0;
+	                            s0 = peg$c1;
+	                          }
+	                        } else {
+	                          peg$currPos = s0;
+	                          s0 = peg$c1;
+	                        }
+	                      } else {
+	                        peg$currPos = s0;
+	                        s0 = peg$c1;
+	                      }
+	                    } else {
+	                      peg$currPos = s0;
+	                      s0 = peg$c1;
+	                    }
+	                  } else {
+	                    peg$currPos = s0;
+	                    s0 = peg$c1;
+	                  }
+	                } else {
+	                  peg$currPos = s0;
+	                  s0 = peg$c1;
+	                }
+	              } else {
+	                peg$currPos = s0;
+	                s0 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsestmtList() {
+	      var s0, s1, s2, s3, s4, s5, s6, s7, s8, s9;
+
+	      s0 = peg$currPos;
+	      s1 = peg$parsestmt();
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$parse_();
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$parse_();
+	        }
+	        if (s2 !== peg$FAILED) {
+	          if (input.charCodeAt(peg$currPos) === 59) {
+	            s3 = peg$c8;
+	            peg$currPos++;
+	          } else {
+	            s3 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c9); }
+	          }
+	          if (s3 === peg$FAILED) {
+	            s3 = peg$c2;
+	          }
+	          if (s3 !== peg$FAILED) {
+	            s4 = [];
+	            s5 = peg$currPos;
+	            s6 = [];
+	            s7 = peg$parse_();
+	            while (s7 !== peg$FAILED) {
+	              s6.push(s7);
+	              s7 = peg$parse_();
+	            }
+	            if (s6 !== peg$FAILED) {
+	              s7 = peg$parsestmt();
+	              if (s7 !== peg$FAILED) {
+	                s8 = [];
+	                s9 = peg$parse_();
+	                while (s9 !== peg$FAILED) {
+	                  s8.push(s9);
+	                  s9 = peg$parse_();
+	                }
+	                if (s8 !== peg$FAILED) {
+	                  if (input.charCodeAt(peg$currPos) === 59) {
+	                    s9 = peg$c8;
+	                    peg$currPos++;
+	                  } else {
+	                    s9 = peg$FAILED;
+	                    if (peg$silentFails === 0) { peg$fail(peg$c9); }
+	                  }
+	                  if (s9 === peg$FAILED) {
+	                    s9 = peg$c2;
+	                  }
+	                  if (s9 !== peg$FAILED) {
+	                    s6 = [s6, s7, s8, s9];
+	                    s5 = s6;
+	                  } else {
+	                    peg$currPos = s5;
+	                    s5 = peg$c1;
+	                  }
+	                } else {
+	                  peg$currPos = s5;
+	                  s5 = peg$c1;
+	                }
+	              } else {
+	                peg$currPos = s5;
+	                s5 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s5;
+	              s5 = peg$c1;
+	            }
+	            while (s5 !== peg$FAILED) {
+	              s4.push(s5);
+	              s5 = peg$currPos;
+	              s6 = [];
+	              s7 = peg$parse_();
+	              while (s7 !== peg$FAILED) {
+	                s6.push(s7);
+	                s7 = peg$parse_();
+	              }
+	              if (s6 !== peg$FAILED) {
+	                s7 = peg$parsestmt();
+	                if (s7 !== peg$FAILED) {
+	                  s8 = [];
+	                  s9 = peg$parse_();
+	                  while (s9 !== peg$FAILED) {
+	                    s8.push(s9);
+	                    s9 = peg$parse_();
+	                  }
+	                  if (s8 !== peg$FAILED) {
+	                    if (input.charCodeAt(peg$currPos) === 59) {
+	                      s9 = peg$c8;
+	                      peg$currPos++;
+	                    } else {
+	                      s9 = peg$FAILED;
+	                      if (peg$silentFails === 0) { peg$fail(peg$c9); }
+	                    }
+	                    if (s9 === peg$FAILED) {
+	                      s9 = peg$c2;
+	                    }
+	                    if (s9 !== peg$FAILED) {
+	                      s6 = [s6, s7, s8, s9];
+	                      s5 = s6;
+	                    } else {
+	                      peg$currPos = s5;
+	                      s5 = peg$c1;
+	                    }
+	                  } else {
+	                    peg$currPos = s5;
+	                    s5 = peg$c1;
+	                  }
+	                } else {
+	                  peg$currPos = s5;
+	                  s5 = peg$c1;
+	                }
+	              } else {
+	                peg$currPos = s5;
+	                s5 = peg$c1;
+	              }
+	            }
+	            if (s4 !== peg$FAILED) {
+	              peg$reportedPos = s0;
+	              s1 = peg$c10(s1, s4);
+	              s0 = s1;
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsestmt() {
+	      var s0;
+
+	      s0 = peg$parseattrStmt();
+	      if (s0 === peg$FAILED) {
+	        s0 = peg$parseedgeStmt();
+	        if (s0 === peg$FAILED) {
+	          s0 = peg$parsesubgraphStmt();
+	          if (s0 === peg$FAILED) {
+	            s0 = peg$parseinlineAttrStmt();
+	            if (s0 === peg$FAILED) {
+	              s0 = peg$parsenodeStmt();
+	            }
+	          }
+	        }
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseattrStmt() {
+	      var s0, s1, s2, s3;
+
+	      s0 = peg$currPos;
+	      s1 = peg$parsegraph();
+	      if (s1 === peg$FAILED) {
+	        s1 = peg$parsenode();
+	        if (s1 === peg$FAILED) {
+	          s1 = peg$parseedge();
+	        }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$parse_();
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$parse_();
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s3 = peg$parseattrList();
+	          if (s3 !== peg$FAILED) {
+	            peg$reportedPos = s0;
+	            s1 = peg$c11(s1, s3);
+	            s0 = s1;
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseinlineAttrStmt() {
+	      var s0, s1, s2, s3, s4, s5;
+
+	      s0 = peg$currPos;
+	      s1 = peg$parseid();
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$parse_();
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$parse_();
+	        }
+	        if (s2 !== peg$FAILED) {
+	          if (input.charCodeAt(peg$currPos) === 61) {
+	            s3 = peg$c12;
+	            peg$currPos++;
+	          } else {
+	            s3 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c13); }
+	          }
+	          if (s3 !== peg$FAILED) {
+	            s4 = [];
+	            s5 = peg$parse_();
+	            while (s5 !== peg$FAILED) {
+	              s4.push(s5);
+	              s5 = peg$parse_();
+	            }
+	            if (s4 !== peg$FAILED) {
+	              s5 = peg$parseid();
+	              if (s5 !== peg$FAILED) {
+	                peg$reportedPos = s0;
+	                s1 = peg$c14(s1, s5);
+	                s0 = s1;
+	              } else {
+	                peg$currPos = s0;
+	                s0 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsenodeStmt() {
+	      var s0, s1, s2, s3;
+
+	      s0 = peg$currPos;
+	      s1 = peg$parsenodeId();
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$parse_();
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$parse_();
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s3 = peg$parseattrList();
+	          if (s3 === peg$FAILED) {
+	            s3 = peg$c2;
+	          }
+	          if (s3 !== peg$FAILED) {
+	            peg$reportedPos = s0;
+	            s1 = peg$c15(s1, s3);
+	            s0 = s1;
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseedgeStmt() {
+	      var s0, s1, s2, s3, s4, s5;
+
+	      s0 = peg$currPos;
+	      s1 = peg$parsenodeIdOrSubgraph();
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$parse_();
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$parse_();
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s3 = peg$parseedgeRHS();
+	          if (s3 !== peg$FAILED) {
+	            s4 = [];
+	            s5 = peg$parse_();
+	            while (s5 !== peg$FAILED) {
+	              s4.push(s5);
+	              s5 = peg$parse_();
+	            }
+	            if (s4 !== peg$FAILED) {
+	              s5 = peg$parseattrList();
+	              if (s5 === peg$FAILED) {
+	                s5 = peg$c2;
+	              }
+	              if (s5 !== peg$FAILED) {
+	                peg$reportedPos = s0;
+	                s1 = peg$c16(s1, s3, s5);
+	                s0 = s1;
+	              } else {
+	                peg$currPos = s0;
+	                s0 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsesubgraphStmt() {
+	      var s0, s1, s2, s3, s4, s5, s6, s7;
+
+	      s0 = peg$currPos;
+	      s1 = peg$currPos;
+	      s2 = peg$parsesubgraph();
+	      if (s2 !== peg$FAILED) {
+	        s3 = [];
+	        s4 = peg$parse_();
+	        while (s4 !== peg$FAILED) {
+	          s3.push(s4);
+	          s4 = peg$parse_();
+	        }
+	        if (s3 !== peg$FAILED) {
+	          s4 = peg$currPos;
+	          s5 = peg$parseid();
+	          if (s5 !== peg$FAILED) {
+	            s6 = [];
+	            s7 = peg$parse_();
+	            while (s7 !== peg$FAILED) {
+	              s6.push(s7);
+	              s7 = peg$parse_();
+	            }
+	            if (s6 !== peg$FAILED) {
+	              s5 = [s5, s6];
+	              s4 = s5;
+	            } else {
+	              peg$currPos = s4;
+	              s4 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s4;
+	            s4 = peg$c1;
+	          }
+	          if (s4 === peg$FAILED) {
+	            s4 = peg$c2;
+	          }
+	          if (s4 !== peg$FAILED) {
+	            s2 = [s2, s3, s4];
+	            s1 = s2;
+	          } else {
+	            peg$currPos = s1;
+	            s1 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s1;
+	          s1 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s1;
+	        s1 = peg$c1;
+	      }
+	      if (s1 === peg$FAILED) {
+	        s1 = peg$c2;
+	      }
+	      if (s1 !== peg$FAILED) {
+	        if (input.charCodeAt(peg$currPos) === 123) {
+	          s2 = peg$c3;
+	          peg$currPos++;
+	        } else {
+	          s2 = peg$FAILED;
+	          if (peg$silentFails === 0) { peg$fail(peg$c4); }
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s3 = [];
+	          s4 = peg$parse_();
+	          while (s4 !== peg$FAILED) {
+	            s3.push(s4);
+	            s4 = peg$parse_();
+	          }
+	          if (s3 !== peg$FAILED) {
+	            s4 = peg$parsestmtList();
+	            if (s4 === peg$FAILED) {
+	              s4 = peg$c2;
+	            }
+	            if (s4 !== peg$FAILED) {
+	              s5 = [];
+	              s6 = peg$parse_();
+	              while (s6 !== peg$FAILED) {
+	                s5.push(s6);
+	                s6 = peg$parse_();
+	              }
+	              if (s5 !== peg$FAILED) {
+	                if (input.charCodeAt(peg$currPos) === 125) {
+	                  s6 = peg$c5;
+	                  peg$currPos++;
+	                } else {
+	                  s6 = peg$FAILED;
+	                  if (peg$silentFails === 0) { peg$fail(peg$c6); }
+	                }
+	                if (s6 !== peg$FAILED) {
+	                  peg$reportedPos = s0;
+	                  s1 = peg$c17(s1, s4);
+	                  s0 = s1;
+	                } else {
+	                  peg$currPos = s0;
+	                  s0 = peg$c1;
+	                }
+	              } else {
+	                peg$currPos = s0;
+	                s0 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseattrList() {
+	      var s0, s1, s2, s3, s4, s5;
+
+	      s0 = peg$currPos;
+	      s1 = peg$parseattrListBlock();
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$currPos;
+	        s4 = [];
+	        s5 = peg$parse_();
+	        while (s5 !== peg$FAILED) {
+	          s4.push(s5);
+	          s5 = peg$parse_();
+	        }
+	        if (s4 !== peg$FAILED) {
+	          s5 = peg$parseattrListBlock();
+	          if (s5 !== peg$FAILED) {
+	            s4 = [s4, s5];
+	            s3 = s4;
+	          } else {
+	            peg$currPos = s3;
+	            s3 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s3;
+	          s3 = peg$c1;
+	        }
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$currPos;
+	          s4 = [];
+	          s5 = peg$parse_();
+	          while (s5 !== peg$FAILED) {
+	            s4.push(s5);
+	            s5 = peg$parse_();
+	          }
+	          if (s4 !== peg$FAILED) {
+	            s5 = peg$parseattrListBlock();
+	            if (s5 !== peg$FAILED) {
+	              s4 = [s4, s5];
+	              s3 = s4;
+	            } else {
+	              peg$currPos = s3;
+	              s3 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s3;
+	            s3 = peg$c1;
+	          }
+	        }
+	        if (s2 !== peg$FAILED) {
+	          peg$reportedPos = s0;
+	          s1 = peg$c18(s1, s2);
+	          s0 = s1;
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseattrListBlock() {
+	      var s0, s1, s2, s3, s4, s5;
+
+	      s0 = peg$currPos;
+	      if (input.charCodeAt(peg$currPos) === 91) {
+	        s1 = peg$c19;
+	        peg$currPos++;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c20); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$parse_();
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$parse_();
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s3 = peg$parseaList();
+	          if (s3 === peg$FAILED) {
+	            s3 = peg$c2;
+	          }
+	          if (s3 !== peg$FAILED) {
+	            s4 = [];
+	            s5 = peg$parse_();
+	            while (s5 !== peg$FAILED) {
+	              s4.push(s5);
+	              s5 = peg$parse_();
+	            }
+	            if (s4 !== peg$FAILED) {
+	              if (input.charCodeAt(peg$currPos) === 93) {
+	                s5 = peg$c21;
+	                peg$currPos++;
+	              } else {
+	                s5 = peg$FAILED;
+	                if (peg$silentFails === 0) { peg$fail(peg$c22); }
+	              }
+	              if (s5 !== peg$FAILED) {
+	                peg$reportedPos = s0;
+	                s1 = peg$c23(s3);
+	                s0 = s1;
+	              } else {
+	                peg$currPos = s0;
+	                s0 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseaList() {
+	      var s0, s1, s2, s3, s4, s5, s6, s7;
+
+	      s0 = peg$currPos;
+	      s1 = peg$parseidDef();
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$currPos;
+	        s4 = [];
+	        s5 = peg$parse_();
+	        while (s5 !== peg$FAILED) {
+	          s4.push(s5);
+	          s5 = peg$parse_();
+	        }
+	        if (s4 !== peg$FAILED) {
+	          if (input.charCodeAt(peg$currPos) === 44) {
+	            s5 = peg$c24;
+	            peg$currPos++;
+	          } else {
+	            s5 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c25); }
+	          }
+	          if (s5 === peg$FAILED) {
+	            s5 = peg$c2;
+	          }
+	          if (s5 !== peg$FAILED) {
+	            s6 = [];
+	            s7 = peg$parse_();
+	            while (s7 !== peg$FAILED) {
+	              s6.push(s7);
+	              s7 = peg$parse_();
+	            }
+	            if (s6 !== peg$FAILED) {
+	              s7 = peg$parseidDef();
+	              if (s7 !== peg$FAILED) {
+	                s4 = [s4, s5, s6, s7];
+	                s3 = s4;
+	              } else {
+	                peg$currPos = s3;
+	                s3 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s3;
+	              s3 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s3;
+	            s3 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s3;
+	          s3 = peg$c1;
+	        }
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$currPos;
+	          s4 = [];
+	          s5 = peg$parse_();
+	          while (s5 !== peg$FAILED) {
+	            s4.push(s5);
+	            s5 = peg$parse_();
+	          }
+	          if (s4 !== peg$FAILED) {
+	            if (input.charCodeAt(peg$currPos) === 44) {
+	              s5 = peg$c24;
+	              peg$currPos++;
+	            } else {
+	              s5 = peg$FAILED;
+	              if (peg$silentFails === 0) { peg$fail(peg$c25); }
+	            }
+	            if (s5 === peg$FAILED) {
+	              s5 = peg$c2;
+	            }
+	            if (s5 !== peg$FAILED) {
+	              s6 = [];
+	              s7 = peg$parse_();
+	              while (s7 !== peg$FAILED) {
+	                s6.push(s7);
+	                s7 = peg$parse_();
+	              }
+	              if (s6 !== peg$FAILED) {
+	                s7 = peg$parseidDef();
+	                if (s7 !== peg$FAILED) {
+	                  s4 = [s4, s5, s6, s7];
+	                  s3 = s4;
+	                } else {
+	                  peg$currPos = s3;
+	                  s3 = peg$c1;
+	                }
+	              } else {
+	                peg$currPos = s3;
+	                s3 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s3;
+	              s3 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s3;
+	            s3 = peg$c1;
+	          }
+	        }
+	        if (s2 !== peg$FAILED) {
+	          peg$reportedPos = s0;
+	          s1 = peg$c26(s1, s2);
+	          s0 = s1;
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseedgeRHS() {
+	      var s0, s1, s2, s3, s4, s5;
+
+	      s0 = peg$currPos;
+	      s1 = peg$currPos;
+	      if (input.substr(peg$currPos, 2) === peg$c27) {
+	        s2 = peg$c27;
+	        peg$currPos += 2;
+	      } else {
+	        s2 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c28); }
+	      }
+	      if (s2 !== peg$FAILED) {
+	        peg$reportedPos = peg$currPos;
+	        s3 = peg$c29();
+	        if (s3) {
+	          s3 = peg$c1;
+	        } else {
+	          s3 = peg$c30;
+	        }
+	        if (s3 !== peg$FAILED) {
+	          s2 = [s2, s3];
+	          s1 = s2;
+	        } else {
+	          peg$currPos = s1;
+	          s1 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s1;
+	        s1 = peg$c1;
+	      }
+	      if (s1 === peg$FAILED) {
+	        s1 = peg$currPos;
+	        if (input.substr(peg$currPos, 2) === peg$c31) {
+	          s2 = peg$c31;
+	          peg$currPos += 2;
+	        } else {
+	          s2 = peg$FAILED;
+	          if (peg$silentFails === 0) { peg$fail(peg$c32); }
+	        }
+	        if (s2 !== peg$FAILED) {
+	          peg$reportedPos = peg$currPos;
+	          s3 = peg$c29();
+	          if (s3) {
+	            s3 = peg$c30;
+	          } else {
+	            s3 = peg$c1;
+	          }
+	          if (s3 !== peg$FAILED) {
+	            s2 = [s2, s3];
+	            s1 = s2;
+	          } else {
+	            peg$currPos = s1;
+	            s1 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s1;
+	          s1 = peg$c1;
+	        }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$parse_();
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$parse_();
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s3 = peg$parsenodeIdOrSubgraph();
+	          if (s3 !== peg$FAILED) {
+	            s4 = [];
+	            s5 = peg$parse_();
+	            while (s5 !== peg$FAILED) {
+	              s4.push(s5);
+	              s5 = peg$parse_();
+	            }
+	            if (s4 !== peg$FAILED) {
+	              s5 = peg$parseedgeRHS();
+	              if (s5 === peg$FAILED) {
+	                s5 = peg$c2;
+	              }
+	              if (s5 !== peg$FAILED) {
+	                peg$reportedPos = s0;
+	                s1 = peg$c33(s3, s5);
+	                s0 = s1;
+	              } else {
+	                peg$currPos = s0;
+	                s0 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseidDef() {
+	      var s0, s1, s2, s3, s4, s5, s6;
+
+	      s0 = peg$currPos;
+	      s1 = peg$parseid();
+	      if (s1 !== peg$FAILED) {
+	        s2 = peg$currPos;
+	        s3 = [];
+	        s4 = peg$parse_();
+	        while (s4 !== peg$FAILED) {
+	          s3.push(s4);
+	          s4 = peg$parse_();
+	        }
+	        if (s3 !== peg$FAILED) {
+	          if (input.charCodeAt(peg$currPos) === 61) {
+	            s4 = peg$c12;
+	            peg$currPos++;
+	          } else {
+	            s4 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c13); }
+	          }
+	          if (s4 !== peg$FAILED) {
+	            s5 = [];
+	            s6 = peg$parse_();
+	            while (s6 !== peg$FAILED) {
+	              s5.push(s6);
+	              s6 = peg$parse_();
+	            }
+	            if (s5 !== peg$FAILED) {
+	              s6 = peg$parseid();
+	              if (s6 !== peg$FAILED) {
+	                s3 = [s3, s4, s5, s6];
+	                s2 = s3;
+	              } else {
+	                peg$currPos = s2;
+	                s2 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s2;
+	              s2 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s2;
+	            s2 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s2;
+	          s2 = peg$c1;
+	        }
+	        if (s2 === peg$FAILED) {
+	          s2 = peg$c2;
+	        }
+	        if (s2 !== peg$FAILED) {
+	          peg$reportedPos = s0;
+	          s1 = peg$c34(s1, s2);
+	          s0 = s1;
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsenodeIdOrSubgraph() {
+	      var s0, s1;
+
+	      s0 = peg$parsesubgraphStmt();
+	      if (s0 === peg$FAILED) {
+	        s0 = peg$currPos;
+	        s1 = peg$parsenodeId();
+	        if (s1 !== peg$FAILED) {
+	          peg$reportedPos = s0;
+	          s1 = peg$c35(s1);
+	        }
+	        s0 = s1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsenodeId() {
+	      var s0, s1, s2, s3;
+
+	      s0 = peg$currPos;
+	      s1 = peg$parseid();
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$parse_();
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$parse_();
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s3 = peg$parseport();
+	          if (s3 === peg$FAILED) {
+	            s3 = peg$c2;
+	          }
+	          if (s3 !== peg$FAILED) {
+	            peg$reportedPos = s0;
+	            s1 = peg$c36(s1);
+	            s0 = s1;
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseport() {
+	      var s0, s1, s2, s3, s4, s5, s6, s7, s8;
+
+	      s0 = peg$currPos;
+	      if (input.charCodeAt(peg$currPos) === 58) {
+	        s1 = peg$c37;
+	        peg$currPos++;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c38); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        s3 = peg$parse_();
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          s3 = peg$parse_();
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s3 = peg$parseid();
+	          if (s3 !== peg$FAILED) {
+	            s4 = [];
+	            s5 = peg$parse_();
+	            while (s5 !== peg$FAILED) {
+	              s4.push(s5);
+	              s5 = peg$parse_();
+	            }
+	            if (s4 !== peg$FAILED) {
+	              s5 = peg$currPos;
+	              if (input.charCodeAt(peg$currPos) === 58) {
+	                s6 = peg$c37;
+	                peg$currPos++;
+	              } else {
+	                s6 = peg$FAILED;
+	                if (peg$silentFails === 0) { peg$fail(peg$c38); }
+	              }
+	              if (s6 !== peg$FAILED) {
+	                s7 = [];
+	                s8 = peg$parse_();
+	                while (s8 !== peg$FAILED) {
+	                  s7.push(s8);
+	                  s8 = peg$parse_();
+	                }
+	                if (s7 !== peg$FAILED) {
+	                  s8 = peg$parsecompassPt();
+	                  if (s8 !== peg$FAILED) {
+	                    s6 = [s6, s7, s8];
+	                    s5 = s6;
+	                  } else {
+	                    peg$currPos = s5;
+	                    s5 = peg$c1;
+	                  }
+	                } else {
+	                  peg$currPos = s5;
+	                  s5 = peg$c1;
+	                }
+	              } else {
+	                peg$currPos = s5;
+	                s5 = peg$c1;
+	              }
+	              if (s5 === peg$FAILED) {
+	                s5 = peg$c2;
+	              }
+	              if (s5 !== peg$FAILED) {
+	                s1 = [s1, s2, s3, s4, s5];
+	                s0 = s1;
+	              } else {
+	                peg$currPos = s0;
+	                s0 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsecompassPt() {
+	      var s0;
+
+	      if (input.substr(peg$currPos, 2) === peg$c39) {
+	        s0 = peg$c39;
+	        peg$currPos += 2;
+	      } else {
+	        s0 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c40); }
+	      }
+	      if (s0 === peg$FAILED) {
+	        if (input.substr(peg$currPos, 2) === peg$c41) {
+	          s0 = peg$c41;
+	          peg$currPos += 2;
+	        } else {
+	          s0 = peg$FAILED;
+	          if (peg$silentFails === 0) { peg$fail(peg$c42); }
+	        }
+	        if (s0 === peg$FAILED) {
+	          if (input.substr(peg$currPos, 2) === peg$c43) {
+	            s0 = peg$c43;
+	            peg$currPos += 2;
+	          } else {
+	            s0 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c44); }
+	          }
+	          if (s0 === peg$FAILED) {
+	            if (input.substr(peg$currPos, 2) === peg$c45) {
+	              s0 = peg$c45;
+	              peg$currPos += 2;
+	            } else {
+	              s0 = peg$FAILED;
+	              if (peg$silentFails === 0) { peg$fail(peg$c46); }
+	            }
+	            if (s0 === peg$FAILED) {
+	              if (input.charCodeAt(peg$currPos) === 110) {
+	                s0 = peg$c47;
+	                peg$currPos++;
+	              } else {
+	                s0 = peg$FAILED;
+	                if (peg$silentFails === 0) { peg$fail(peg$c48); }
+	              }
+	              if (s0 === peg$FAILED) {
+	                if (input.charCodeAt(peg$currPos) === 101) {
+	                  s0 = peg$c49;
+	                  peg$currPos++;
+	                } else {
+	                  s0 = peg$FAILED;
+	                  if (peg$silentFails === 0) { peg$fail(peg$c50); }
+	                }
+	                if (s0 === peg$FAILED) {
+	                  if (input.charCodeAt(peg$currPos) === 115) {
+	                    s0 = peg$c51;
+	                    peg$currPos++;
+	                  } else {
+	                    s0 = peg$FAILED;
+	                    if (peg$silentFails === 0) { peg$fail(peg$c52); }
+	                  }
+	                  if (s0 === peg$FAILED) {
+	                    if (input.charCodeAt(peg$currPos) === 119) {
+	                      s0 = peg$c53;
+	                      peg$currPos++;
+	                    } else {
+	                      s0 = peg$FAILED;
+	                      if (peg$silentFails === 0) { peg$fail(peg$c54); }
+	                    }
+	                    if (s0 === peg$FAILED) {
+	                      if (input.charCodeAt(peg$currPos) === 99) {
+	                        s0 = peg$c55;
+	                        peg$currPos++;
+	                      } else {
+	                        s0 = peg$FAILED;
+	                        if (peg$silentFails === 0) { peg$fail(peg$c56); }
+	                      }
+	                      if (s0 === peg$FAILED) {
+	                        if (input.charCodeAt(peg$currPos) === 95) {
+	                          s0 = peg$c57;
+	                          peg$currPos++;
+	                        } else {
+	                          s0 = peg$FAILED;
+	                          if (peg$silentFails === 0) { peg$fail(peg$c58); }
+	                        }
+	                      }
+	                    }
+	                  }
+	                }
+	              }
+	            }
+	          }
+	        }
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parseid() {
+	      var s0, s1, s2, s3, s4, s5, s6;
+
+	      peg$silentFails++;
+	      s0 = peg$currPos;
+	      if (peg$c60.test(input.charAt(peg$currPos))) {
+	        s1 = input.charAt(peg$currPos);
+	        peg$currPos++;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c61); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        if (peg$c62.test(input.charAt(peg$currPos))) {
+	          s3 = input.charAt(peg$currPos);
+	          peg$currPos++;
+	        } else {
+	          s3 = peg$FAILED;
+	          if (peg$silentFails === 0) { peg$fail(peg$c63); }
+	        }
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          if (peg$c62.test(input.charAt(peg$currPos))) {
+	            s3 = input.charAt(peg$currPos);
+	            peg$currPos++;
+	          } else {
+	            s3 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c63); }
+	          }
+	        }
+	        if (s2 !== peg$FAILED) {
+	          peg$reportedPos = s0;
+	          s1 = peg$c64(s1, s2);
+	          s0 = s1;
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+	      if (s0 === peg$FAILED) {
+	        s0 = peg$currPos;
+	        if (input.charCodeAt(peg$currPos) === 45) {
+	          s1 = peg$c65;
+	          peg$currPos++;
+	        } else {
+	          s1 = peg$FAILED;
+	          if (peg$silentFails === 0) { peg$fail(peg$c66); }
+	        }
+	        if (s1 === peg$FAILED) {
+	          s1 = peg$c2;
+	        }
+	        if (s1 !== peg$FAILED) {
+	          if (input.charCodeAt(peg$currPos) === 46) {
+	            s2 = peg$c67;
+	            peg$currPos++;
+	          } else {
+	            s2 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c68); }
+	          }
+	          if (s2 !== peg$FAILED) {
+	            s3 = [];
+	            if (peg$c69.test(input.charAt(peg$currPos))) {
+	              s4 = input.charAt(peg$currPos);
+	              peg$currPos++;
+	            } else {
+	              s4 = peg$FAILED;
+	              if (peg$silentFails === 0) { peg$fail(peg$c70); }
+	            }
+	            if (s4 !== peg$FAILED) {
+	              while (s4 !== peg$FAILED) {
+	                s3.push(s4);
+	                if (peg$c69.test(input.charAt(peg$currPos))) {
+	                  s4 = input.charAt(peg$currPos);
+	                  peg$currPos++;
+	                } else {
+	                  s4 = peg$FAILED;
+	                  if (peg$silentFails === 0) { peg$fail(peg$c70); }
+	                }
+	              }
+	            } else {
+	              s3 = peg$c1;
+	            }
+	            if (s3 !== peg$FAILED) {
+	              peg$reportedPos = s0;
+	              s1 = peg$c71(s1, s2, s3);
+	              s0 = s1;
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	        if (s0 === peg$FAILED) {
+	          s0 = peg$currPos;
+	          if (input.charCodeAt(peg$currPos) === 45) {
+	            s1 = peg$c65;
+	            peg$currPos++;
+	          } else {
+	            s1 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c66); }
+	          }
+	          if (s1 === peg$FAILED) {
+	            s1 = peg$c2;
+	          }
+	          if (s1 !== peg$FAILED) {
+	            s2 = [];
+	            if (peg$c69.test(input.charAt(peg$currPos))) {
+	              s3 = input.charAt(peg$currPos);
+	              peg$currPos++;
+	            } else {
+	              s3 = peg$FAILED;
+	              if (peg$silentFails === 0) { peg$fail(peg$c70); }
+	            }
+	            if (s3 !== peg$FAILED) {
+	              while (s3 !== peg$FAILED) {
+	                s2.push(s3);
+	                if (peg$c69.test(input.charAt(peg$currPos))) {
+	                  s3 = input.charAt(peg$currPos);
+	                  peg$currPos++;
+	                } else {
+	                  s3 = peg$FAILED;
+	                  if (peg$silentFails === 0) { peg$fail(peg$c70); }
+	                }
+	              }
+	            } else {
+	              s2 = peg$c1;
+	            }
+	            if (s2 !== peg$FAILED) {
+	              s3 = peg$currPos;
+	              if (input.charCodeAt(peg$currPos) === 46) {
+	                s4 = peg$c67;
+	                peg$currPos++;
+	              } else {
+	                s4 = peg$FAILED;
+	                if (peg$silentFails === 0) { peg$fail(peg$c68); }
+	              }
+	              if (s4 !== peg$FAILED) {
+	                s5 = [];
+	                if (peg$c69.test(input.charAt(peg$currPos))) {
+	                  s6 = input.charAt(peg$currPos);
+	                  peg$currPos++;
+	                } else {
+	                  s6 = peg$FAILED;
+	                  if (peg$silentFails === 0) { peg$fail(peg$c70); }
+	                }
+	                while (s6 !== peg$FAILED) {
+	                  s5.push(s6);
+	                  if (peg$c69.test(input.charAt(peg$currPos))) {
+	                    s6 = input.charAt(peg$currPos);
+	                    peg$currPos++;
+	                  } else {
+	                    s6 = peg$FAILED;
+	                    if (peg$silentFails === 0) { peg$fail(peg$c70); }
+	                  }
+	                }
+	                if (s5 !== peg$FAILED) {
+	                  s4 = [s4, s5];
+	                  s3 = s4;
+	                } else {
+	                  peg$currPos = s3;
+	                  s3 = peg$c1;
+	                }
+	              } else {
+	                peg$currPos = s3;
+	                s3 = peg$c1;
+	              }
+	              if (s3 === peg$FAILED) {
+	                s3 = peg$c2;
+	              }
+	              if (s3 !== peg$FAILED) {
+	                peg$reportedPos = s0;
+	                s1 = peg$c72(s1, s2, s3);
+	                s0 = s1;
+	              } else {
+	                peg$currPos = s0;
+	                s0 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	          if (s0 === peg$FAILED) {
+	            s0 = peg$currPos;
+	            if (input.charCodeAt(peg$currPos) === 34) {
+	              s1 = peg$c73;
+	              peg$currPos++;
+	            } else {
+	              s1 = peg$FAILED;
+	              if (peg$silentFails === 0) { peg$fail(peg$c74); }
+	            }
+	            if (s1 !== peg$FAILED) {
+	              s2 = [];
+	              s3 = peg$currPos;
+	              if (input.substr(peg$currPos, 2) === peg$c75) {
+	                s4 = peg$c75;
+	                peg$currPos += 2;
+	              } else {
+	                s4 = peg$FAILED;
+	                if (peg$silentFails === 0) { peg$fail(peg$c76); }
+	              }
+	              if (s4 !== peg$FAILED) {
+	                peg$reportedPos = s3;
+	                s4 = peg$c77();
+	              }
+	              s3 = s4;
+	              if (s3 === peg$FAILED) {
+	                s3 = peg$currPos;
+	                if (input.charCodeAt(peg$currPos) === 92) {
+	                  s4 = peg$c78;
+	                  peg$currPos++;
+	                } else {
+	                  s4 = peg$FAILED;
+	                  if (peg$silentFails === 0) { peg$fail(peg$c79); }
+	                }
+	                if (s4 !== peg$FAILED) {
+	                  if (peg$c80.test(input.charAt(peg$currPos))) {
+	                    s5 = input.charAt(peg$currPos);
+	                    peg$currPos++;
+	                  } else {
+	                    s5 = peg$FAILED;
+	                    if (peg$silentFails === 0) { peg$fail(peg$c81); }
+	                  }
+	                  if (s5 !== peg$FAILED) {
+	                    peg$reportedPos = s3;
+	                    s4 = peg$c82(s5);
+	                    s3 = s4;
+	                  } else {
+	                    peg$currPos = s3;
+	                    s3 = peg$c1;
+	                  }
+	                } else {
+	                  peg$currPos = s3;
+	                  s3 = peg$c1;
+	                }
+	                if (s3 === peg$FAILED) {
+	                  if (peg$c80.test(input.charAt(peg$currPos))) {
+	                    s3 = input.charAt(peg$currPos);
+	                    peg$currPos++;
+	                  } else {
+	                    s3 = peg$FAILED;
+	                    if (peg$silentFails === 0) { peg$fail(peg$c81); }
+	                  }
+	                }
+	              }
+	              while (s3 !== peg$FAILED) {
+	                s2.push(s3);
+	                s3 = peg$currPos;
+	                if (input.substr(peg$currPos, 2) === peg$c75) {
+	                  s4 = peg$c75;
+	                  peg$currPos += 2;
+	                } else {
+	                  s4 = peg$FAILED;
+	                  if (peg$silentFails === 0) { peg$fail(peg$c76); }
+	                }
+	                if (s4 !== peg$FAILED) {
+	                  peg$reportedPos = s3;
+	                  s4 = peg$c77();
+	                }
+	                s3 = s4;
+	                if (s3 === peg$FAILED) {
+	                  s3 = peg$currPos;
+	                  if (input.charCodeAt(peg$currPos) === 92) {
+	                    s4 = peg$c78;
+	                    peg$currPos++;
+	                  } else {
+	                    s4 = peg$FAILED;
+	                    if (peg$silentFails === 0) { peg$fail(peg$c79); }
+	                  }
+	                  if (s4 !== peg$FAILED) {
+	                    if (peg$c80.test(input.charAt(peg$currPos))) {
+	                      s5 = input.charAt(peg$currPos);
+	                      peg$currPos++;
+	                    } else {
+	                      s5 = peg$FAILED;
+	                      if (peg$silentFails === 0) { peg$fail(peg$c81); }
+	                    }
+	                    if (s5 !== peg$FAILED) {
+	                      peg$reportedPos = s3;
+	                      s4 = peg$c82(s5);
+	                      s3 = s4;
+	                    } else {
+	                      peg$currPos = s3;
+	                      s3 = peg$c1;
+	                    }
+	                  } else {
+	                    peg$currPos = s3;
+	                    s3 = peg$c1;
+	                  }
+	                  if (s3 === peg$FAILED) {
+	                    if (peg$c80.test(input.charAt(peg$currPos))) {
+	                      s3 = input.charAt(peg$currPos);
+	                      peg$currPos++;
+	                    } else {
+	                      s3 = peg$FAILED;
+	                      if (peg$silentFails === 0) { peg$fail(peg$c81); }
+	                    }
+	                  }
+	                }
+	              }
+	              if (s2 !== peg$FAILED) {
+	                if (input.charCodeAt(peg$currPos) === 34) {
+	                  s3 = peg$c73;
+	                  peg$currPos++;
+	                } else {
+	                  s3 = peg$FAILED;
+	                  if (peg$silentFails === 0) { peg$fail(peg$c74); }
+	                }
+	                if (s3 !== peg$FAILED) {
+	                  peg$reportedPos = s0;
+	                  s1 = peg$c83(s2);
+	                  s0 = s1;
+	                } else {
+	                  peg$currPos = s0;
+	                  s0 = peg$c1;
+	                }
+	              } else {
+	                peg$currPos = s0;
+	                s0 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          }
+	        }
+	      }
+	      peg$silentFails--;
+	      if (s0 === peg$FAILED) {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c59); }
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsenode() {
+	      var s0, s1;
+
+	      s0 = peg$currPos;
+	      if (input.substr(peg$currPos, 4).toLowerCase() === peg$c84) {
+	        s1 = input.substr(peg$currPos, 4);
+	        peg$currPos += 4;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c85); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        peg$reportedPos = s0;
+	        s1 = peg$c86(s1);
+	      }
+	      s0 = s1;
+
+	      return s0;
+	    }
+
+	    function peg$parseedge() {
+	      var s0, s1;
+
+	      s0 = peg$currPos;
+	      if (input.substr(peg$currPos, 4).toLowerCase() === peg$c87) {
+	        s1 = input.substr(peg$currPos, 4);
+	        peg$currPos += 4;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c88); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        peg$reportedPos = s0;
+	        s1 = peg$c86(s1);
+	      }
+	      s0 = s1;
+
+	      return s0;
+	    }
+
+	    function peg$parsegraph() {
+	      var s0, s1;
+
+	      s0 = peg$currPos;
+	      if (input.substr(peg$currPos, 5).toLowerCase() === peg$c89) {
+	        s1 = input.substr(peg$currPos, 5);
+	        peg$currPos += 5;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c90); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        peg$reportedPos = s0;
+	        s1 = peg$c86(s1);
+	      }
+	      s0 = s1;
+
+	      return s0;
+	    }
+
+	    function peg$parsedigraph() {
+	      var s0, s1;
+
+	      s0 = peg$currPos;
+	      if (input.substr(peg$currPos, 7).toLowerCase() === peg$c91) {
+	        s1 = input.substr(peg$currPos, 7);
+	        peg$currPos += 7;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c92); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        peg$reportedPos = s0;
+	        s1 = peg$c86(s1);
+	      }
+	      s0 = s1;
+
+	      return s0;
+	    }
+
+	    function peg$parsesubgraph() {
+	      var s0, s1;
+
+	      s0 = peg$currPos;
+	      if (input.substr(peg$currPos, 8).toLowerCase() === peg$c93) {
+	        s1 = input.substr(peg$currPos, 8);
+	        peg$currPos += 8;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c94); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        peg$reportedPos = s0;
+	        s1 = peg$c86(s1);
+	      }
+	      s0 = s1;
+
+	      return s0;
+	    }
+
+	    function peg$parsestrict() {
+	      var s0, s1;
+
+	      s0 = peg$currPos;
+	      if (input.substr(peg$currPos, 6).toLowerCase() === peg$c95) {
+	        s1 = input.substr(peg$currPos, 6);
+	        peg$currPos += 6;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c96); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        peg$reportedPos = s0;
+	        s1 = peg$c86(s1);
+	      }
+	      s0 = s1;
+
+	      return s0;
+	    }
+
+	    function peg$parsegraphType() {
+	      var s0, s1;
+
+	      s0 = peg$parsegraph();
+	      if (s0 === peg$FAILED) {
+	        s0 = peg$currPos;
+	        s1 = peg$parsedigraph();
+	        if (s1 !== peg$FAILED) {
+	          peg$reportedPos = s0;
+	          s1 = peg$c97(s1);
+	        }
+	        s0 = s1;
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsewhitespace() {
+	      var s0, s1;
+
+	      peg$silentFails++;
+	      s0 = [];
+	      if (peg$c99.test(input.charAt(peg$currPos))) {
+	        s1 = input.charAt(peg$currPos);
+	        peg$currPos++;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c100); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        while (s1 !== peg$FAILED) {
+	          s0.push(s1);
+	          if (peg$c99.test(input.charAt(peg$currPos))) {
+	            s1 = input.charAt(peg$currPos);
+	            peg$currPos++;
+	          } else {
+	            s1 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c100); }
+	          }
+	        }
+	      } else {
+	        s0 = peg$c1;
+	      }
+	      peg$silentFails--;
+	      if (s0 === peg$FAILED) {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c98); }
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parsecomment() {
+	      var s0, s1, s2, s3, s4, s5;
+
+	      peg$silentFails++;
+	      s0 = peg$currPos;
+	      if (input.substr(peg$currPos, 2) === peg$c102) {
+	        s1 = peg$c102;
+	        peg$currPos += 2;
+	      } else {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c103); }
+	      }
+	      if (s1 !== peg$FAILED) {
+	        s2 = [];
+	        if (peg$c104.test(input.charAt(peg$currPos))) {
+	          s3 = input.charAt(peg$currPos);
+	          peg$currPos++;
+	        } else {
+	          s3 = peg$FAILED;
+	          if (peg$silentFails === 0) { peg$fail(peg$c105); }
+	        }
+	        while (s3 !== peg$FAILED) {
+	          s2.push(s3);
+	          if (peg$c104.test(input.charAt(peg$currPos))) {
+	            s3 = input.charAt(peg$currPos);
+	            peg$currPos++;
+	          } else {
+	            s3 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c105); }
+	          }
+	        }
+	        if (s2 !== peg$FAILED) {
+	          s1 = [s1, s2];
+	          s0 = s1;
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      } else {
+	        peg$currPos = s0;
+	        s0 = peg$c1;
+	      }
+	      if (s0 === peg$FAILED) {
+	        s0 = peg$currPos;
+	        if (input.substr(peg$currPos, 2) === peg$c106) {
+	          s1 = peg$c106;
+	          peg$currPos += 2;
+	        } else {
+	          s1 = peg$FAILED;
+	          if (peg$silentFails === 0) { peg$fail(peg$c107); }
+	        }
+	        if (s1 !== peg$FAILED) {
+	          s2 = [];
+	          s3 = peg$currPos;
+	          s4 = peg$currPos;
+	          peg$silentFails++;
+	          if (input.substr(peg$currPos, 2) === peg$c108) {
+	            s5 = peg$c108;
+	            peg$currPos += 2;
+	          } else {
+	            s5 = peg$FAILED;
+	            if (peg$silentFails === 0) { peg$fail(peg$c109); }
+	          }
+	          peg$silentFails--;
+	          if (s5 === peg$FAILED) {
+	            s4 = peg$c30;
+	          } else {
+	            peg$currPos = s4;
+	            s4 = peg$c1;
+	          }
+	          if (s4 !== peg$FAILED) {
+	            if (input.length > peg$currPos) {
+	              s5 = input.charAt(peg$currPos);
+	              peg$currPos++;
+	            } else {
+	              s5 = peg$FAILED;
+	              if (peg$silentFails === 0) { peg$fail(peg$c110); }
+	            }
+	            if (s5 !== peg$FAILED) {
+	              s4 = [s4, s5];
+	              s3 = s4;
+	            } else {
+	              peg$currPos = s3;
+	              s3 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s3;
+	            s3 = peg$c1;
+	          }
+	          while (s3 !== peg$FAILED) {
+	            s2.push(s3);
+	            s3 = peg$currPos;
+	            s4 = peg$currPos;
+	            peg$silentFails++;
+	            if (input.substr(peg$currPos, 2) === peg$c108) {
+	              s5 = peg$c108;
+	              peg$currPos += 2;
+	            } else {
+	              s5 = peg$FAILED;
+	              if (peg$silentFails === 0) { peg$fail(peg$c109); }
+	            }
+	            peg$silentFails--;
+	            if (s5 === peg$FAILED) {
+	              s4 = peg$c30;
+	            } else {
+	              peg$currPos = s4;
+	              s4 = peg$c1;
+	            }
+	            if (s4 !== peg$FAILED) {
+	              if (input.length > peg$currPos) {
+	                s5 = input.charAt(peg$currPos);
+	                peg$currPos++;
+	              } else {
+	                s5 = peg$FAILED;
+	                if (peg$silentFails === 0) { peg$fail(peg$c110); }
+	              }
+	              if (s5 !== peg$FAILED) {
+	                s4 = [s4, s5];
+	                s3 = s4;
+	              } else {
+	                peg$currPos = s3;
+	                s3 = peg$c1;
+	              }
+	            } else {
+	              peg$currPos = s3;
+	              s3 = peg$c1;
+	            }
+	          }
+	          if (s2 !== peg$FAILED) {
+	            if (input.substr(peg$currPos, 2) === peg$c108) {
+	              s3 = peg$c108;
+	              peg$currPos += 2;
+	            } else {
+	              s3 = peg$FAILED;
+	              if (peg$silentFails === 0) { peg$fail(peg$c109); }
+	            }
+	            if (s3 !== peg$FAILED) {
+	              s1 = [s1, s2, s3];
+	              s0 = s1;
+	            } else {
+	              peg$currPos = s0;
+	              s0 = peg$c1;
+	            }
+	          } else {
+	            peg$currPos = s0;
+	            s0 = peg$c1;
+	          }
+	        } else {
+	          peg$currPos = s0;
+	          s0 = peg$c1;
+	        }
+	      }
+	      peg$silentFails--;
+	      if (s0 === peg$FAILED) {
+	        s1 = peg$FAILED;
+	        if (peg$silentFails === 0) { peg$fail(peg$c101); }
+	      }
+
+	      return s0;
+	    }
+
+	    function peg$parse_() {
+	      var s0;
+
+	      s0 = peg$parsewhitespace();
+	      if (s0 === peg$FAILED) {
+	        s0 = peg$parsecomment();
+	      }
+
+	      return s0;
+	    }
+
+
+	      var _ = __webpack_require__(313);
+	      var directed;
+
+
+	    peg$result = peg$startRuleFunction();
+
+	    if (peg$result !== peg$FAILED && peg$currPos === input.length) {
+	      return peg$result;
+	    } else {
+	      if (peg$result !== peg$FAILED && peg$currPos < input.length) {
+	        peg$fail({ type: "end", description: "end of input" });
+	      }
+
+	      throw peg$buildException(null, peg$maxFailExpected, peg$maxFailPos);
+	    }
+	  }
+
+	  return {
+	    SyntaxError: SyntaxError,
+	    parse:       parse
+	  };
+	})();
+
+
+/***/ }),
+/* 313 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	/* global window */
+
+	var lodash;
+
+	if (__webpack_require__(314)) {
+	  try {
+	    lodash = __webpack_require__(305);
+	  } catch (e) {
+	    // continue regardless of error
+	  }
+	}
+
+	if (!lodash) {
+	  lodash = window._;
+	}
+
+	module.exports = lodash;
+
+
+/***/ }),
+/* 314 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var map = {
+		"./build-graph": 315,
+		"./build-graph.js": 315,
+		"./dot-grammar": 312,
+		"./dot-grammar.js": 312,
+		"./graphlib": 316,
+		"./graphlib.js": 316,
+		"./index": 317,
+		"./index.js": 317,
+		"./lodash": 313,
+		"./lodash.js": 313,
+		"./read-many": 318,
+		"./read-many.js": 318,
+		"./read-one": 311,
+		"./read-one.js": 311,
+		"./version": 320,
+		"./version.js": 320,
+		"./write-one": 319,
+		"./write-one.js": 319
+	};
+	function webpackContext(req) {
+		return __webpack_require__(webpackContextResolve(req));
+	};
+	function webpackContextResolve(req) {
+		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
+	};
+	webpackContext.keys = function webpackContextKeys() {
+		return Object.keys(map);
+	};
+	webpackContext.resolve = webpackContextResolve;
+	module.exports = webpackContext;
+	webpackContext.id = 314;
+
+
+/***/ }),
+/* 315 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _ = __webpack_require__(313);
+	var Graph = __webpack_require__(316).Graph;
+
+	module.exports = buildGraph;
+
+	function buildGraph(parseTree) {
+	  var isDirected = parseTree.type !== "graph",
+	    isMultigraph = !parseTree.strict,
+	    defaultStack = [{ node: {}, edge: {} }],
+	    id = parseTree.id,
+	    g = new Graph({ directed: isDirected, multigraph: isMultigraph, compound: true });
+	  g.setGraph(id === null ? {} : {id: id});
+	  _.each(parseTree.stmts, function(stmt) { handleStmt(g, stmt, defaultStack); });
+	  return g;
+	}
+
+	function handleStmt(g, stmt, defaultStack, sg) {
+	  switch(stmt.type) {
+	  case "node": handleNodeStmt(g, stmt, defaultStack, sg); break;
+	  case "edge": handleEdgeStmt(g, stmt, defaultStack, sg); break;
+	  case "subgraph": handleSubgraphStmt(g, stmt, defaultStack, sg); break;
+	  case "attr": handleAttrStmt(g, stmt, defaultStack); break;
+	  case "inlineAttr": handleInlineAttrsStmt(g, stmt, defaultStack, sg); break;
+	  }
+	}
+
+	function handleNodeStmt(g, stmt, defaultStack, sg) {
+	  var v = stmt.id,
+	    attrs = stmt.attrs;
+	  maybeCreateNode(g, v, defaultStack, sg);
+	  _.merge(g.node(v), attrs);
+	}
+
+	function handleEdgeStmt(g, stmt, defaultStack, sg) {
+	  var attrs = stmt.attrs,
+	    prev, curr;
+	  _.each(stmt.elems, function(elem) {
+	    handleStmt(g, elem, defaultStack, sg);
+
+	    switch(elem.type) {
+	    case "node": curr = [elem.id]; break;
+	    case "subgraph": curr = collectNodeIds(elem); break;
+	    }
+
+	    _.each(prev, function(v) {
+	      _.each(curr, function(w) {
+	        var name;
+	        if (g.hasEdge(v, w) && g.isMultigraph()) {
+	          name = _.uniqueId("edge");
+	        }
+	        if (!g.hasEdge(v, w, name)) {
+	          g.setEdge(v, w, _.clone(_.last(defaultStack).edge), name);
+	        }
+	        _.merge(g.edge(v, w, name), attrs);
+	      });
+	    });
+
+	    prev = curr;
+	  });
+	}
+
+	function handleSubgraphStmt(g, stmt, defaultStack, sg) {
+	  var id = stmt.id;
+	  if (id === undefined) {
+	    id = generateSubgraphId(g);
+	  }
+
+	  defaultStack.push(_.clone(_.last(defaultStack)));
+
+	  maybeCreateNode(g, id, defaultStack, sg);
+
+	  _.each(stmt.stmts, function(s) {
+	    handleStmt(g, s, defaultStack, id);
+	  });
+
+	  // If there are no statements remove the subgraph
+	  if (!g.children(id).length) {
+	    g.removeNode(id);
+	  }
+
+	  defaultStack.pop();
+	}
+
+	function handleAttrStmt(g, stmt, defaultStack) {
+	  _.merge(_.last(defaultStack)[stmt.attrType], stmt.attrs);
+	}
+
+	function handleInlineAttrsStmt(g, stmt, defaultStack, sg) {
+	  _.merge(sg ? g.node(sg) : g.graph(), stmt.attrs);
+	}
+
+	function generateSubgraphId(g) {
+	  var id;
+	  do {
+	    id = _.uniqueId("sg");
+	  } while (g.hasNode(id));
+	  return id;
+	}
+
+	function maybeCreateNode(g, v, defaultStack, sg) {
+	  if (!g.hasNode(v)) {
+	    g.setNode(v, _.clone(_.last(defaultStack).node));
+	    g.setParent(v, sg);
+	  }
+	}
+
+	// Collect all nodes involved in a subgraph statement
+	function collectNodeIds(stmt) {
+	  var ids = {},
+	    stack = [],
+	    curr;
+
+	  var push = stack.push.bind(stack);
+
+	  push(stmt);
+	  while(stack.length) {
+	    curr = stack.pop();
+	    switch(curr.type) {
+	    case "node": ids[curr.id] = true; break;
+	    case "edge": _.each(curr.elems, push); break;
+	    case "subgraph": _.each(curr.stmts, push); break;
+	    }
+	  }
+
+	  return _.keys(ids);
+	}
+
+
+
+/***/ }),
+/* 316 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	/* global window */
+
+	var graphlib;
+
+	if (__webpack_require__(314)) {
+	  try {
+	    graphlib = __webpack_require__(4);
+	  } catch (e) {
+	    // continue regardless of error
+	  }
+	}
+
+	if (!graphlib) {
+	  graphlib = window.graphlib;
+	}
+
+	module.exports = graphlib;
+
+
+/***/ }),
+/* 317 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var read = __webpack_require__(311),
+	  readMany = __webpack_require__(318),
+	  write = __webpack_require__(319);
+
+	module.exports = {
+	  read: read,
+	  readMany: readMany,
+	  write: write
+	};
+
+
+/***/ }),
+/* 318 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(313);
+	var grammar = __webpack_require__(312);
+	var buildGraph = __webpack_require__(315);
+
+	module.exports = function readMany(str) {
+	  var parseTree = grammar.parse(str);
+	  return _.map(parseTree, buildGraph);
+	};
+
+
+/***/ }),
+/* 319 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(313);
+
+	module.exports = writeOne;
+
+	var UNESCAPED_ID_PATTERN = /^[a-zA-Z\200-\377_][a-zA-Z\200-\377_0-9]*$/;
+
+	function writeOne(g) {
+	  var ec = g.isDirected() ? "->" : "--";
+	  var writer = new Writer();
+
+	  if (!g.isMultigraph()) {
+	    writer.write("strict ");
+	  }
+
+	  writer.writeLine((g.isDirected() ? "digraph" : "graph") + " {");
+	  writer.indent();
+
+	  var graphAttrs = g.graph();
+	  if (_.isObject(graphAttrs)) {
+	    _.each(graphAttrs, function(v, k) {
+	      writer.writeLine(id(k) + "=" + id(v) + ";");
+	    });
+	  }
+
+	  writeSubgraph(g, undefined, writer);
+
+	  g.edges().forEach(function(edge) {
+	    writeEdge(g, edge, ec, writer);
+	  });
+
+	  writer.unindent();
+	  writer.writeLine("}");
+
+	  return writer.toString();
+	}
+
+	function writeSubgraph(g, v, writer) {
+	  var children = g.isCompound() ? g.children(v) : g.nodes();
+	  _.each(children, function(w) {
+	    if (!g.isCompound() || !g.children(w).length) {
+	      writeNode(g, w, writer);
+	    } else {
+	      writer.writeLine("subgraph " + id(w) + " {");
+	      writer.indent();
+
+	      if (_.isObject(g.node(w))) {
+	        _.map(g.node(w), function(val, key) {
+	          writer.writeLine(id(key) + "=" + id(val) + ";");
+	        });
+	      }
+
+	      writeSubgraph(g, w, writer);
+	      writer.unindent();
+	      writer.writeLine("}");
+	    }
+	  });
+	}
+
+	function writeNode(g, v, writer) {
+	  writer.write(id(v));
+	  writeAttrs(g.node(v), writer);
+	  writer.writeLine();
+	}
+
+	function writeEdge(g, edge, ec, writer) {
+	  var v = edge.v;
+	  var w = edge.w;
+	  var attrs = g.edge(edge);
+
+	  writer.write(id(v) + " " + ec + " " + id(w));
+	  writeAttrs(attrs, writer);
+	  writer.writeLine();
+	}
+
+	function writeAttrs(attrs, writer) {
+	  if (_.isObject(attrs)) {
+	    var attrStrs = _.map(attrs, function(val, key) {
+	      return id(key) + "=" + id(val);
+	    });
+	    if (attrStrs.length) {
+	      writer.write(" [" + attrStrs.join(",") + "]");
+	    }
+	  }
+	}
+
+	function id(obj) {
+	  if (typeof obj === "number" || obj.toString().match(UNESCAPED_ID_PATTERN)) {
+	    return obj;
+	  }
+
+	  return "\"" + obj.toString().replace(/"/g, "\\\"") + "\"";
+	}
+
+	// Helper object for making a pretty printer
+	function Writer() {
+	  this._indent = "";
+	  this._content = "";
+	  this._shouldIndent = true;
+	}
+
+	Writer.prototype.INDENT = "  ";
+
+	Writer.prototype.indent = function() {
+	  this._indent += this.INDENT;
+	};
+
+	Writer.prototype.unindent = function() {
+	  this._indent = this._indent.slice(this.INDENT.length);
+	};
+
+	Writer.prototype.writeLine = function(line) {
+	  this.write((line || "") + "\n");
+	  this._shouldIndent = true;
+	};
+
+	Writer.prototype.write = function(str) {
+	  if (this._shouldIndent) {
+	    this._shouldIndent = false;
+	    this._content += this._indent;
+	  }
+	  this._content += str;
+	};
+
+	Writer.prototype.toString = function() {
+	  return this._content;
+	};
+
+
+
+/***/ }),
+/* 320 */
+/***/ (function(module, exports) {
+
+	module.exports = '0.6.4';
+
+
+/***/ }),
+/* 321 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 2020 Splunk Inc.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License. */
+
+	!(__WEBPACK_AMD_DEFINE_ARRAY__ = [
+	    __webpack_require__(291),
+	    __webpack_require__(302)
 	], __WEBPACK_AMD_DEFINE_RESULT__ = function(
 	    $,
 	    _
@@ -57224,12 +60272,12 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
-/* 310 */
+/* 322 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// https://d3js.org/d3-interpolate/ v1.4.0 Copyright 2019 Mike Bostock
 	(function (global, factory) {
-	 true ? factory(exports, __webpack_require__(311)) :
+	 true ? factory(exports, __webpack_require__(323)) :
 	typeof define === 'function' && define.amd ? define(['exports', 'd3-color'], factory) :
 	(global = global || self, factory(global.d3 = global.d3 || {}, global.d3));
 	}(this, function (exports, d3Color) { 'use strict';
@@ -57823,7 +60871,7 @@ define(["api/SplunkVisualizationBase","api/SplunkVisualizationUtils","util/gener
 
 
 /***/ }),
-/* 311 */
+/* 323 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	// https://d3js.org/d3-color/ v1.4.1 Copyright 2020 Mike Bostock

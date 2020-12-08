@@ -23,6 +23,7 @@ define([
     "dagre",
     "jointjs",
     "process_flow",
+    "process_dot",
     "process_utils",
     "d3-interpolate"
 ],
@@ -37,6 +38,7 @@ define([
         dagre,
         joint,
         processFlow,
+        processDot,
         processUtils,
         d3
     ) {
@@ -51,6 +53,7 @@ define([
             layoutEdgeSep: 80,
             layoutNodeSep: 50,
             linkVertices: true,
+            modeDOT: false,
 
             initialize: function () {
                 SplunkVisualizationBase.prototype.initialize.apply(this, arguments);
@@ -77,8 +80,15 @@ define([
             formatData: function (data, config) {
                 if (data.rows.length < 1)
                     return false;
-    
+                
+                console.log(data)
+
                 this._getConfigParams(config);
+                
+                if (this.modeDOT) {
+                    graph = processDot.buildGraph(data.rows)
+                    return graph
+                }
 
                 let aggMethod = processUtils.averageUpdate;
                 switch (this.aggregationMethod) {
@@ -99,14 +109,26 @@ define([
             },
 
             updateView: function (shapes, config) {
-                if (!shapes)
+                if (!shapes) {
+                    console.log("No shapes")
                     return false;
-                
+                }
                 var graph = new joint.dia.Graph;
 
-                paper = this._initPaper(graph);
-                this._renderGraph(shapes, graph);
+                if (this.modeDOT) {
+
+                    graph = shapes
+                    paper = this._initPaper(graph);
+
+                    this._renderGraph([], graph);
+
+                } else {
+                    paper = this._initPaper(graph);
+
+                    this._renderGraph(shapes, graph);
+                }
                 this._initPanZoom(paper);
+
             },
 
             _getEscapedProperty: function(name, config) {
@@ -122,6 +144,7 @@ define([
                 this.layoutNodeSep = parseFloat(this._getEscapedProperty("layoutNodeSep", config)) || this.layoutNodeSep;
                 this.layoutEdgeSep = parseFloat(this._getEscapedProperty("layoutEdgeSep", config)) || this.layoutEdgeSep;
                 this.linkVertices = genUtils.normalizeBoolean(this._getEscapedProperty("linkVertices", config), { default: this.linkVertices });
+                this.modeDOT = genUtils.normalizeBoolean(this._getEscapedProperty("modeDOT", config), { default: this.modeDOT });
 
                 this.aggregationMethod = this._getEscapedProperty("aggregationMethod", config) || this.aggregationMethod;
                 this.variableStrokeWidth = genUtils.normalizeBoolean(this._getEscapedProperty("variableStrokeWidth", config), { default: true });
@@ -220,8 +243,10 @@ define([
             },
 
             _renderGraph: function (shapes, graph) {
+                if (shapes.length > 0) {
                 graph.addCell(shapes);
-                
+                }
+                console.log(graph)
                 joint.layout.DirectedGraph.layout(graph, {
                     dagre: dagre,
                     graphlib: graphlib,

@@ -27,6 +27,23 @@ define([
         joint
     ) {
         let processShapes = {};
+        processShapes.Start = joint.shapes.standard.Circle.define("process.Start", {
+            attrs: {
+                bodyText: {
+                    fontFamily: "Splunk Platform Mono,Inconsolata,Consolas,Droid Sans Mono,Monaco,Courier New,Courier,monospace",
+                }
+            },
+            size: {
+                height: 50,
+                width: 50
+            }
+        },{}, {
+            create: function(id){
+                var start = new this();
+                start.id = id
+                return start
+            }
+        })
 
         processShapes.Step = joint.shapes.standard.HeaderedRectangle.define("process.Step", {
                 attrs: {

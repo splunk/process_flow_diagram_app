@@ -16,6 +16,7 @@
     "d3-interpolate": "^1.4.0",
     "dagre": "^0.8.5",
     "graphlib": "^2.1.8",
+    "graphlib-dot": "^0.6.4",
     "jointjs": "^3.2.0",
     "jquery": "^2.2.4",
     "svg-pan-zoom": "^3.6.1",
