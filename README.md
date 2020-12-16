@@ -20,8 +20,8 @@ Based on the open source [joint.js](https://jointjs.com) library.
 
 ### Installation
 
-1. Download the most recent version of the app `.tar.gz` bundle from Github Releases
-2. Install through Splunk Enterprise UI ("Manage Apps"). In a distributed environment, please install the App in the Search Tier ([Splunk Docs](https://docs.splunk.com/Documentation/AddOns/released/Overview/Wheretoinstall) for details)
+1. [Download](https://github.com/splunk/process_flow_diagram_app/archive/master.zip) the repository
+2. Extract the archive and copy the folder to `$SPLUNK_HOME/etc/apps`
 
 ## Usage
 

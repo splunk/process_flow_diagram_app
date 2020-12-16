@@ -3,6 +3,7 @@ node_modules/
 *.swp
 *.pyc
 .vscode
+.idea
 
 # Splunk app local files
 local
