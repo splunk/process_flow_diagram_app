@@ -10,7 +10,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - run: mkdir -p dist
-      - run: |
+      - run: >
             tar 
             --exclude process_flow_diagram_app/appserver/static/visualizations/process_flow_diagram/node_modules 
             --exclude process_flow_diagram_app/local 
