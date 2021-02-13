@@ -9,13 +9,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - run: mkdir -p /dist/
+      - run: mkdir -p dist
       - run: |
             tar 
             --exclude process_flow_diagram_app/appserver/static/visualizations/process_flow_diagram/node_modules 
             --exclude process_flow_diagram_app/local 
             -zcvf 
-            /dist/app.tgz 
+            dist/app.tgz 
             process_flow_diagram_app
 
       - uses: actions/upload-artifact@v2
