@@ -22,3 +22,21 @@ jobs:
         with:
           name: bundle
           path: dist/app.tgz
+  run-appinspect:
+    steps:
+      - run: >
+          curl -Ls https://download.splunk.com/misc/appinspect/splunk-appinspect-2.0.0.tar.gz -o appinspect-lastest.tar.gz
+          mkdir appinspect-latest
+          tar -zxvf appinspect-lastest.tar.gz -C appinspect-latest --strip-components=1
+      - run: >
+            cd appinspect-latest
+            rm -rf venv
+            sudo pip install --upgrade pip setuptools
+            sudo pip install virtualenv
+            virtualenv --python=/usr/bin/python3 --clear venv
+            source venv/bin/activate
+            pip install .
+      - run: >
+            cd appinspect-latest
+            source venv/bin/activate
+            splunk-appinspect inspect ~/dist/app.tgz --included-tags=cloud
