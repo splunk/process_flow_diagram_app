@@ -24,6 +24,7 @@
         <option name="process_flow_diagram_app.process_flow_diagram.layoutNodeSep">0</option>
         <option name="process_flow_diagram_app.process_flow_diagram.layoutOrientation">LR</option>
         <option name="process_flow_diagram_app.process_flow_diagram.linkVertices">true</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.modeDotRendering">true</option>
         <option name="process_flow_diagram_app.process_flow_diagram.stepsMaxColor">#003D5E</option>
         <option name="process_flow_diagram_app.process_flow_diagram.stepsMinColor">#5EAD5C</option>
         <option name="process_flow_diagram_app.process_flow_diagram.stepsMode">gradient</option>

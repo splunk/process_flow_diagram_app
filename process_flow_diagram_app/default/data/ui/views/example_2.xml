@@ -24,6 +24,7 @@
         <option name="process_flow_diagram_app.process_flow_diagram.layoutNodeSep">100</option>
         <option name="process_flow_diagram_app.process_flow_diagram.layoutOrientation">TB</option>
         <option name="process_flow_diagram_app.process_flow_diagram.linkVertices">false</option>
+        <option name="process_flow_diagram_app.process_flow_diagram.modeDotRendering">true</option>
         <option name="process_flow_diagram_app.process_flow_diagram.stepsMaxColor">#003D5E</option>
         <option name="process_flow_diagram_app.process_flow_diagram.stepsMinColor">#ECF8FF</option>
         <option name="process_flow_diagram_app.process_flow_diagram.stepsMode">highlight</option>

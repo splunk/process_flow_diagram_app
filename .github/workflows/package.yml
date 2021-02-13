@@ -1,0 +1,24 @@
+name: Package
+
+on: push
+
+jobs:
+  package-slim:
+    name: Package Using Slim Toolki
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - run: mkdir -p /dist/
+      - run: |
+            tar 
+            --exclude process_flow_diagram_app/appserver/static/visualizations/process_flow_diagram/node_modules 
+            --exclude process_flow_diagram_app/local 
+            -zcvf 
+            /dist/app.tgz 
+            process_flow_diagram_app
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: bundle
+          path: /dist/app.tgz
