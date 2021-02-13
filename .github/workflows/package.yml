@@ -21,4 +21,4 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: bundle
-          path: /dist/app.tgz
+          path: dist/app.tgz
