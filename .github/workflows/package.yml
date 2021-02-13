@@ -22,22 +22,23 @@ jobs:
         with:
           name: bundle
           path: dist/app.tgz
-  run-appinspect:
+  appinspect:
+    name: AppInspect Validation
     runs-on: ubuntu-latest
     steps:
-      - run: >
-          curl -Ls https://download.splunk.com/misc/appinspect/splunk-appinspect-2.0.0.tar.gz -o appinspect-lastest.tar.gz
-          mkdir appinspect-latest
-          tar -zxvf appinspect-lastest.tar.gz -C appinspect-latest --strip-components=1
-      - run: >
-            cd appinspect-latest
-            rm -rf venv
-            sudo pip install --upgrade pip setuptools
-            sudo pip install virtualenv
-            virtualenv --python=/usr/bin/python3 --clear venv
-            source venv/bin/activate
-            pip install .
-      - run: >
-            cd appinspect-latest
-            source venv/bin/activate
-            splunk-appinspect inspect ~/dist/app.tgz --included-tags=cloud
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install libxml2-dev libxslt1-dev
+          python -m pip install http://download.splunk.com/misc/appinspect/splunk-appinspect-latest.tar.gz
+      - name: Run AppInspect
+        run: |
+          splunk-appinspect inspect process_flow_diagram_app --output-file appinspect.json
+          exit `cat appinspect.json | jq '.summary.failure'`
