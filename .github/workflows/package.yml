@@ -3,8 +3,8 @@ name: Package
 on: push
 
 jobs:
-  package-slim:
-    name: Package Using Slim Toolki
+  package:
+    name: Package
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -23,6 +23,7 @@ jobs:
           name: bundle
           path: dist/app.tgz
   run-appinspect:
+    runs-on: ubuntu-latest
     steps:
       - run: >
           curl -Ls https://download.splunk.com/misc/appinspect/splunk-appinspect-2.0.0.tar.gz -o appinspect-lastest.tar.gz
