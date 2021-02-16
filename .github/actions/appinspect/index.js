@@ -117,6 +117,7 @@ function poll(fn, token, requestID,timeout, interval) {
             console.log(response.status)
 
             if(response.status == "SUCCESS") {
+                console.log(response.info)
                 resolve(response.data);
             }
             // If the condition isn't met but the timeout hasn't elapsed, go again
