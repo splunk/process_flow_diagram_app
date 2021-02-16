@@ -1,4 +1,4 @@
-node_modules/
+process_flow_diagram_app/**/node_modules/
 .DS_Store
 *.swp
 *.pyc

@@ -1,0 +1,12 @@
+name: 'AppInspect'
+description: 'Run AppInspect against API'
+inputs:
+  app-bundle:
+    description: 'path to app bundle'
+    required: true
+  report-path:
+    description: 'path to store report'
+    required: true
+runs:
+  using: 'node12'
+  main: 'index.js'

@@ -22,8 +22,8 @@ jobs:
         with:
           name: bundle
           path: dist/app.tgz
-  appinspect:
-    name: AppInspect Validation
+  appinspect-cli:
+    name: AppInspect CLI Validation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -42,3 +42,29 @@ jobs:
         run: |
           splunk-appinspect inspect process_flow_diagram_app --output-file appinspect.json
           exit `cat appinspect.json | jq '.summary.failure'`
+  appinspect-api:
+    needs: package
+    name: AppInspect API Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - run: mkdir -p dist
+      - uses: actions/download-artifact@v2
+        with:
+          name: bundle
+          path: dist/
+
+      - name: AppInspect action
+        env:
+          SPLUNK_USER: ${{ secrets.SPLUNK_USER }}
+          SPLUNK_PASS: ${{ secrets.SPLUNK_PASS }}
+        with:
+          app-bundle: dist/app.tgz
+          report-path: dist
+        uses: ./.github/actions/appinspect
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: report
+          path: dist/report.html
