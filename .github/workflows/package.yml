@@ -1,10 +1,10 @@
-name: Package
+name: CI
 
 on: push
 
 jobs:
   package:
-    name: CI
+    name: Create app bundle
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
