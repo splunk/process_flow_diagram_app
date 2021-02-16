@@ -70,6 +70,7 @@ jobs:
           name: report
           path: dist/report.html
   prep_release:
+    needs: [package,appinspect-cli,appinspect-api]
     runs-on: ubuntu-latest
     name: Draft Release
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/v')
