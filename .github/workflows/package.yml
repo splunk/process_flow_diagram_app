@@ -23,6 +23,7 @@ jobs:
           name: bundle
           path: dist/app.tgz
   appinspect-cli:
+    needs: package
     name: AppInspect CLI Validation
     runs-on: ubuntu-latest
     steps:
