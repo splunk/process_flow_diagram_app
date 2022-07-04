@@ -37,8 +37,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install libxml2-dev libxslt1-dev
-          python -m pip install http://download.splunk.com/misc/appinspect/splunk-appinspect-latest.tar.gz
+          python -m pip install splunk-appinspect  
       - name: Run AppInspect
         run: |
           splunk-appinspect inspect process_flow_diagram_app --output-file appinspect.json
