@@ -1,6 +1,6 @@
 {
   "name": "process_flow_diagram",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Custom visualization for process flows.",
   "main": "visualization.js",
   "scripts": {
