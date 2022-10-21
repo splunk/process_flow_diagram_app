@@ -25,7 +25,8 @@ define([
     "process_flow",
     "process_dot",
     "process_utils",
-    "d3-interpolate"
+    "d3-interpolate",
+    "uuid"
 ],
     function (
         $,
@@ -43,6 +44,7 @@ define([
         d3
     ) {
 
+
         return SplunkVisualizationBase.extend({
             stepsMode: "gradient",
             stepsMinColor: "#ECF8FF",
@@ -54,8 +56,20 @@ define([
             layoutNodeSep: 50,
             linkVertices: true,
             modeDOT: false,
-
             initialize: function () {
+
+                function makeid(length) {
+                    var result           = '';
+                    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                    var charactersLength = characters.length;
+                    for ( var i = 0; i < length; i++ ) {
+                        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+                    }
+                    return result;
+                }
+        
+                this.processElId = "a" + makeid(10)
+
                 SplunkVisualizationBase.prototype.initialize.apply(this, arguments);
                 this.$el = $(this.el);
                 this.$el.append("<div style=\"overflow: none; width:100%; height: 100%;\"> \
@@ -64,8 +78,10 @@ define([
                             <button  class=\"btn btn-secondary\" id=\"zoom-out\">Zoom out</button> \
                             <button  class=\"btn btn-secondary\" id=\"reset\">Reset</button>\
                             </div>\
-                <div id=\"process_flow_diagram\"></div></div>");
-                this.$processEl = $("#process_flow_diagram");
+                <div id=\"" + this.processElId + "\"></div></div>");
+
+                console.log(this.processElId)
+                this.$processEl = $(`#${this.processElId}`)
 
                 processFlow.initialize();
             },
@@ -189,7 +205,7 @@ define([
             _initPaper: function(graph) {
 
                 var paper = new joint.dia.Paper({
-                    el: $("#process_flow_diagram"),
+                    el: $(`#${this.processElId}`),
                     model: graph,
                     width: "100%",
                     height: "100%",
@@ -203,9 +219,9 @@ define([
             _initPanZoom: function(paper) {
                 
                 var panAndZoom;
-                panAndZoom = svgPanZoom(document.querySelector("#process_flow_diagram>svg"), 
+                panAndZoom = svgPanZoom(document.querySelector(`#${this.processElId} > svg`), 
                     {
-                        viewportSelector: document.querySelector("#process_flow_diagram>svg>g.joint-layers"),
+                        viewportSelector: document.querySelector(`#${this.processElId} > svg>g.joint-layers`),
                         zoomEnabled: false,
                         controlIconsEnabled: false,                
                         fit: true,

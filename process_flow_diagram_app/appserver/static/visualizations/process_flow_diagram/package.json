@@ -1,6 +1,6 @@
 {
   "name": "process_flow_diagram",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Custom visualization for process flows.",
   "main": "visualization.js",
   "scripts": {
@@ -20,6 +20,7 @@
     "jointjs": "^3.2.0",
     "jquery": "^3.6.0",
     "svg-pan-zoom": "^3.6.1",
-    "underscore": "^1.10.2"
+    "underscore": "^1.10.2",
+    "uuid": "^9.0.0"
   }
 }
