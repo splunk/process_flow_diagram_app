@@ -74,9 +74,9 @@ define([
                 this.$el = $(this.el);
                 this.$el.append("<div style=\"overflow: none; width:100%; height: 100%;\"> \
                             <div class=\"zoom-controls\"> \
-                            <button class=\"btn btn-secondary\" id=\"zoom-in\">Zoom in</button> \
-                            <button  class=\"btn btn-secondary\" id=\"zoom-out\">Zoom out</button> \
-                            <button  class=\"btn btn-secondary\" id=\"reset\">Reset</button>\
+                            <button class=\"btn btn-secondary\" id=\"" + this.processElId + "zoom-in\">Zoom in</button> \
+                            <button  class=\"btn btn-secondary\" id=\"" + this.processElId + "zoom-out\">Zoom out</button> \
+                            <button  class=\"btn btn-secondary\" id=\"" + this.processElId + "reset\">Reset</button>\
                             </div>\
                 <div id=\"" + this.processElId + "\"></div></div>");
 
@@ -238,19 +238,19 @@ define([
                         panAndZoom.disablePan();
                 });
 
-                document.getElementById("zoom-in").addEventListener("click", function(ev){
+                document.getElementById(this.processElId + "zoom-in").addEventListener("click", function(ev){
                     ev.preventDefault();
           
                     panAndZoom.zoomIn();
                   });
           
-                  document.getElementById("zoom-out").addEventListener("click", function(ev){
+                  document.getElementById(this.processElId +"zoom-out").addEventListener("click", function(ev){
                     ev.preventDefault();
           
                     panAndZoom.zoomOut();
                   });
           
-                  document.getElementById("reset").addEventListener("click", function(ev){
+                  document.getElementById(this.processElId +"reset").addEventListener("click", function(ev){
                     ev.preventDefault();
                     panAndZoom.resetPan();
                     panAndZoom.resetZoom();
